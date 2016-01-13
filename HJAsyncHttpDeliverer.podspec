@@ -11,8 +11,8 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.source       = { :git => "https://github.com/P9SOFT/HJAsyncHttpDeliverer.git", :tag => "1.0.0" }
-  s.source_files  = "HJAsyncHttpDeliverer/Sources/*.{h,m}"
-  s.public_header_files = "HJAsyncHttpDeliverer/Sources/*.h"
+  s.source_files  = "Sources/*.{h,m}"
+  s.public_header_files = "Sources/*.h"
 
   s.dependency 'Hydra'
 
