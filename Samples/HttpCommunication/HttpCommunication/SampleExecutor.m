@@ -69,11 +69,12 @@
         if( asyncHttpDeliverer == nil ) {
             return [self storeFailedResultWithQuery:anQuery];
         }
+#warning set trust host if you deal with server by HTTPS
         // set trust host if you deal with server by HTTPS
         // and if you consider that support iOS 9 over then check 'NSAppTransportSecurity' key at Info.plist.
         // you can handle these information from some global values or parameters from query object, and so on. it's up to you.
         // in this case, just hard coding. :)
-        [asyncHttpDeliverer setTrustedHosts:@[@"ec2-54-186-207-227.us-west-2.compute.amazonaws.com", @"www.p9soft.com"]];
+        [asyncHttpDeliverer setTrustedHosts:@[@"www.p9soft.com"]];
         
         // read parameter values from query object.
         SampleExecutorOperation operaiton = (SampleExecutorOperation)[[anQuery parameterForKey:SampleExecutorParameterKeyOperation] integerValue];
