@@ -1,9 +1,9 @@
 //
 //  HJAsyncHttpDeliverer.m
-//  HJBox
+//  Hydra Jelly Box
 //
-//  Created by Na Tae Hyun on 13. 4. 4..
-//  Copyright (c) 2013년 Na Tae Hyun. All rights reserved.
+//  Created by Tae Hyun Na on 2013. 4. 4.
+//  Copyright (c) 2014, P9 SOFT, Inc. All rights reserved.
 //
 //  Licensed under the MIT license.
 
