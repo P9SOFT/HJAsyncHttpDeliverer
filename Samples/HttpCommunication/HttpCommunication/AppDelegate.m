@@ -23,7 +23,7 @@
 {
     // Override point for customization after application launch.
     
-    // add built-in common worker to hydra
+    // add a worker to hydra
     [[Hydra defaultHydra] addCommonWorker];
     
     // stanby manager with worker and bind to hydra

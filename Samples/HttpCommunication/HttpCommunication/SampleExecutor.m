@@ -44,7 +44,8 @@
         }
         NSMutableDictionary *resultDict = [NSJSONSerialization JSONObjectWithData:receivedData options:NSJSONReadingMutableContainers error:nil];
         if( resultDict == nil ) {
-            return [self storeFailedResultWithQuery:anQuery];
+            resultDict = [[NSMutableDictionary alloc] init];
+            [resultDict setObject: [[NSString alloc] initWithData: receivedData encoding: NSUTF8StringEncoding] forKey:@"rawData"];
         }
         
         // set wanted data to result for its key.
@@ -73,8 +74,8 @@
         // set trust host if you deal with server by HTTPS
         // and if you consider that support iOS 9 over then check 'NSAppTransportSecurity' key at Info.plist.
         // you can handle these information from some global values or parameters from query object, and so on. it's up to you.
-        // in this case, just hard coding. :)
-        [asyncHttpDeliverer setTrustedHosts:@[@"www.p9soft.com"]];
+        //
+        // [asyncHttpDeliverer setTrustedHosts:@[@"www.p9soft.com"]];
         
         // read parameter values from query object.
         SampleExecutorOperation operaiton = (SampleExecutorOperation)[[anQuery parameterForKey:SampleExecutorParameterKeyOperation] integerValue];

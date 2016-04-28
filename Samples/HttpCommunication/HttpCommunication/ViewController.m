@@ -125,12 +125,19 @@
     if( serverApiUrl.length == 0 ) {
         return;
     }
+    if( ([serverApiUrl rangeOfString:@"http://"].location != 0) && ([serverApiUrl rangeOfString:@"https://"].location != 0) ) {
+        serverApiUrl = [NSString stringWithFormat:@"http://%@", serverApiUrl];
+    }
     NSDictionary *paramDict = [self dictionaryFromParameterTextField];
 
     // request HTTP GET method to SampleManager.
     if( self.getButton.selected == YES ) {
         self.transferButton.enabled = NO;
-        [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
+        if( [paramDict count] > 0 ) {
+            [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
+        } else {
+            [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n", serverApiUrl]];
+        }
         [[SampleManager defaultManager] requestServerApi:serverApiUrl httpMethod:@"GET" parameterDict:nil completion:^(NSMutableDictionary *resultDict) {
             // you can handle result data with completion block code, here or can handle with notification handler, above.
             // it's up to you.
@@ -139,7 +146,11 @@
     // request HTTP POST method to SampleManager.
     } else if( self.postButton.selected == YES ) {
         self.transferButton.enabled = NO;
-        [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
+        if( [paramDict count] > 0 ) {
+            [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
+        } else {
+            [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n", serverApiUrl]];
+        }
         [[SampleManager defaultManager] requestServerApi:serverApiUrl httpMethod:@"POST" parameterDict:paramDict completion:^(NSMutableDictionary *resultDict) {
             self.transferButton.enabled = YES;
         }];

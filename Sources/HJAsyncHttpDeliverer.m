@@ -313,9 +313,11 @@
 		}
 	)
 	
-	if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self]) == nil ) {
+	if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
 		return NO;
 	}
+    [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
+    [_connection start];
 	
 	return YES;
 }
@@ -701,10 +703,10 @@
 			}
 			_fileHandle = [NSFileHandle fileHandleForWritingAtPath: _downloadFilePath];
 			if( _fileHandle != nil ) {
-				_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self];
+				_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO];
 			}
 		} else {
-			_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self];
+			_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO];
 		}
 		if( _connection == nil ) {
 			[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
@@ -713,6 +715,8 @@
 			}
 			return NO;
 		}
+        [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
+        [_connection start];
 		
 		HYTRACE_BLOCK
 		(
@@ -751,10 +755,12 @@
 		
 	} else { // ([[_request HTTPMethod] isEqualToString: @"DELETE"] == YES)
 		
-		if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self]) == nil ) {
+		if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
 			[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
 			return NO;
 		}
+        [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
+        [_connection start];
 		
 	}
 	
