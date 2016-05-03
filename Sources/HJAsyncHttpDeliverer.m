@@ -487,6 +487,96 @@
 	return YES;
 }
 
+- (BOOL) setPutWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType
+{
+    if( [urlString length] <= 0 ) {
+        return NO;
+    }
+    
+    switch( contentType ) {
+        case HJAsyncHttpDelivererPostContentTypeMultipart :
+            [self setValue: [NSString stringWithFormat :@"multipart/form-data; boundary=%@", _multipartBoundaryString] forHeaderField: @"Content-Type"];
+            break;
+        case HJAsyncHttpDelivererPostContentTypeUrlEncoded :
+            [self setValue: @"application/x-www-form-urlencoded" forHeaderField: @"Content-Type"];
+            break;
+        case HJAsyncHttpDelivererPostContentTypeApplicationJson :
+            [self setValue: @"application/json" forHeaderField: @"Content-Type"];
+            [self setValue: @"application/json" forHeaderField: @"Accept"];
+            break;
+        default :
+            return NO;
+    }
+    
+    self.urlString = urlString;
+    [self setMethod: @"PUT"];
+    
+    [self setValuesFromFormDataDict: dict];
+    
+    return YES;
+}
+
+- (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data
+{
+    if( ([urlString length] <= 0) || ([fieldName length] <= 0) || ([fileName length] <= 0) || ([fileContentType length] <=0) || ([data length] <= 0) ) {
+        return NO;
+    }
+    
+    [self setValue: [NSString stringWithFormat :@"multipart/form-data; boundary=%@", _multipartBoundaryString] forHeaderField: @"Content-Type"];
+    self.urlString = urlString;
+    [self setMethod: @"PUT"];
+    
+    [self setData: data forFormDataField: fieldName fileName: fileName contentType: fileContentType];
+    
+    return YES;
+}
+
+- (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath
+{
+    if( [urlString length] <= 0 ) {
+        return NO;
+    }
+    
+    if( [self setFileForStreammingUpload: filePath forFormDataField: fieldName fileName: fileName contentType: fileContentType] == NO ) {
+        return NO;
+    }
+    
+    [self setValue: [NSString stringWithFormat :@"multipart/form-data; boundary=%@", _multipartBoundaryString] forHeaderField: @"Content-Type"];
+    self.urlString = urlString;
+    [self setMethod: @"PUT"];
+    
+    return YES;
+}
+
+- (BOOL) setDeleteWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType
+{
+    if( [urlString length] <= 0 ) {
+        return NO;
+    }
+    
+    switch( contentType ) {
+        case HJAsyncHttpDelivererPostContentTypeMultipart :
+            [self setValue: [NSString stringWithFormat :@"multipart/form-data; boundary=%@", _multipartBoundaryString] forHeaderField: @"Content-Type"];
+            break;
+        case HJAsyncHttpDelivererPostContentTypeUrlEncoded :
+            [self setValue: @"application/x-www-form-urlencoded" forHeaderField: @"Content-Type"];
+            break;
+        case HJAsyncHttpDelivererPostContentTypeApplicationJson :
+            [self setValue: @"application/json" forHeaderField: @"Content-Type"];
+            [self setValue: @"application/json" forHeaderField: @"Accept"];
+            break;
+        default :
+            return NO;
+    }
+    
+    self.urlString = urlString;
+    [self setMethod: @"DELETE"];
+    
+    [self setValuesFromFormDataDict: dict];
+    
+    return YES;
+}
+
 - (BOOL) setValue: (NSString *)value forQueryStringField: (NSString *)fieldName
 {
 	if( ([value length] <= 0) || ([fieldName length] <= 0) ) {
@@ -739,7 +829,7 @@
 			}
 		)
 		
-	} else if( ([[_request HTTPMethod] isEqualToString: @"POST"] == YES) || ([[_request HTTPMethod] isEqualToString: @"PUT"] == YES) ) {
+	} else if( ([[_request HTTPMethod] isEqualToString: @"POST"] == YES) || ([[_request HTTPMethod] isEqualToString: @"PUT"] == YES) || ([[_request HTTPMethod] isEqualToString: @"DELETE"] == YES) ) {
 		
 		dispatch_async( dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 			
@@ -761,7 +851,7 @@
 			
 		});
 		
-	} else { // ([[_request HTTPMethod] isEqualToString: @"DELETE"] == YES)
+	} else {
 		
 		if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
 			[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
