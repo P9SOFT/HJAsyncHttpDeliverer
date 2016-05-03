@@ -206,41 +206,49 @@
 	
 	boundaryData = [[NSString stringWithFormat: @"--%@\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding];
 	
-	if( [_formDataFieldDict count] > 0 ) {
-		if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/x-www-form-urlencoded"] == YES ) {
-			if( (value = [self stringForUrlEncodedFromDict: _formDataFieldDict]) != nil ) {
-				[_sendData appendData: [value dataUsingEncoding: NSUTF8StringEncoding]];
-			}
-		} else if( [[_headerFieldDict objectForKey: @"Content-Type"] rangeOfString: @"multipart/form-data"].location != NSNotFound ) {
-			for( fieldName in _formDataFieldDict ) {
-				anObject = [_formDataFieldDict objectForKey: fieldName];
-				if( [anObject isKindOfClass: [NSString class]] == YES ) {
-					value = (NSString *)anObject;
-					[_sendData appendData: boundaryData];
-					[_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
-				} else if( [anObject isKindOfClass: [NSData class]] == YES ) {
-					data = (NSData *)anObject;
-					fileName = [_formDataFileNameDict objectForKey: fieldName];
-					fileContentType = [_formDataContentTypeDict objectForKey: fieldName];
-					[_sendData appendData: boundaryData];
-					if( ([fileName length] > 0) && ([fileContentType length] > 0) ) {
-						[_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\nContent-Type: %@\r\n\r\n", fieldName, fileName, fileContentType] dataUsingEncoding: NSUTF8StringEncoding]];
-					} else {
-						[_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", fieldName] dataUsingEncoding: NSUTF8StringEncoding]];
-					}
-					[_sendData appendData: data];
-					[_sendData appendData: [[NSString stringWithFormat: @"\r\n"] dataUsingEncoding: NSUTF8StringEncoding]];
-				}
-			}
-			[_sendData appendData: [[NSString stringWithFormat: @"--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
-		} else if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/json"] == YES ) {
-			if( [NSJSONSerialization isValidJSONObject: _formDataFieldDict] == YES ) {
-				if( (data = [NSJSONSerialization dataWithJSONObject: _formDataFieldDict options: NSJSONWritingPrettyPrinted error: &error]) != nil ) {
-					[_sendData appendData: data];
-				}
-			}
-		}
-	}
+    if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/x-www-form-urlencoded"] == YES ) {
+        if( [_formDataFieldDict count] > 0 ) {
+            if( (value = [self stringForUrlEncodedFromDict: _formDataFieldDict]) != nil ) {
+                [_sendData appendData: [value dataUsingEncoding: NSUTF8StringEncoding]];
+            }
+        }
+    } else if( [[_headerFieldDict objectForKey: @"Content-Type"] rangeOfString: @"multipart/form-data"].location != NSNotFound ) {
+        if( [_formDataFieldDict count] > 0 ) {
+            for( fieldName in _formDataFieldDict ) {
+                anObject = [_formDataFieldDict objectForKey: fieldName];
+                if( [anObject isKindOfClass: [NSString class]] == YES ) {
+                    value = (NSString *)anObject;
+                    [_sendData appendData: boundaryData];
+                    [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
+                } else if( [anObject isKindOfClass: [NSData class]] == YES ) {
+                    data = (NSData *)anObject;
+                    fileName = [_formDataFileNameDict objectForKey: fieldName];
+                    fileContentType = [_formDataContentTypeDict objectForKey: fieldName];
+                    [_sendData appendData: boundaryData];
+                    if( ([fileName length] > 0) && ([fileContentType length] > 0) ) {
+                        [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\nContent-Type: %@\r\n\r\n", fieldName, fileName, fileContentType] dataUsingEncoding: NSUTF8StringEncoding]];
+                    } else {
+                        [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", fieldName] dataUsingEncoding: NSUTF8StringEncoding]];
+                    }
+                    [_sendData appendData: data];
+                    [_sendData appendData: [[NSString stringWithFormat: @"\r\n"] dataUsingEncoding: NSUTF8StringEncoding]];
+                }
+            }
+            [_sendData appendData: [[NSString stringWithFormat: @"--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
+        }
+    } else if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/json"] == YES ) {
+        if( [_formDataFieldDict count] > 0 ) {
+            if( [NSJSONSerialization isValidJSONObject: _formDataFieldDict] == YES ) {
+                if( (data = [NSJSONSerialization dataWithJSONObject: _formDataFieldDict options: NSJSONWritingPrettyPrinted error: &error]) != nil ) {
+                    [_sendData appendData: data];
+                }
+            }
+        } else {
+            if( (data = [@"{}" dataUsingEncoding: NSUTF8StringEncoding]) != nil ) {
+                [_sendData appendData: data];
+            }
+        }
+    }
 	
 	if( [_uploadFilePath length] > 0 ) {
 		[_sendData appendData: boundaryData];
