@@ -104,12 +104,14 @@
 	
 	for( key in dict ) {
 		anObject = [dict objectForKey: key];
-		if( [anObject isKindOfClass: [NSString class]] == YES ) {
+        if( [anObject isKindOfClass: [NSNumber class]] == YES ) {
+            value = [anObject stringValue];
+        } else if( [anObject isKindOfClass: [NSString class]] == YES ) {
 			value = (NSString *)anObject;
 		} else if( [anObject isKindOfClass: [NSData class]] == YES ) {
 			value = [[NSString alloc] initWithData: anObject encoding: NSUTF8StringEncoding];
 		} else {
-			continue;
+            value = [anObject description];
 		}
 		encodedKey = [self stringForUrlEncoded: key];
 		encodedValue = [self stringForUrlEncoded: value];
@@ -577,9 +579,9 @@
     return YES;
 }
 
-- (BOOL) setValue: (NSString *)value forQueryStringField: (NSString *)fieldName
+- (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName
 {
-	if( ([value length] <= 0) || ([fieldName length] <= 0) ) {
+	if( (value == nil) || ([fieldName length] <= 0) ) {
 		return NO;
 	}
 	

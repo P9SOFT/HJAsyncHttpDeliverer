@@ -94,7 +94,7 @@ typedef enum _HJAsyncHttpDelivererPostContentType_
 - (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath;
 - (BOOL) setDeleteWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
 
-- (BOOL) setValue: (NSString *)value forQueryStringField: (NSString *)fieldName;
+- (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName;
 - (BOOL) setValuesFromQueryStringDict: (NSDictionary *)dict;
 - (void) removeValueForQueryStringField: (NSString *)fieldName;
 - (void) clearAllQueryStringFields;
