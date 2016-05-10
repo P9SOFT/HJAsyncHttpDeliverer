@@ -138,7 +138,7 @@
         } else {
             [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n", serverApiUrl]];
         }
-        [[SampleManager defaultManager] requestServerApi:serverApiUrl httpMethod:@"GET" parameterDict:nil completion:^(NSMutableDictionary *resultDict) {
+        [[SampleManager defaultManager] requestServerApi:serverApiUrl httpMethod:@"GET" parameterDict:paramDict completion:^(NSMutableDictionary *resultDict) {
             // you can handle result data with completion block code, here or can handle with notification handler, above.
             // it's up to you.
             self.transferButton.enabled = YES;

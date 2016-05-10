@@ -769,7 +769,11 @@
 	if( (value = [self stringForUrlEncodedFromDict: _queryStringFieldDict]) == nil ) {
 		urlStringWithQueries = _urlString;
 	} else {
-		urlStringWithQueries = [NSString stringWithFormat: @"%@?%@", _urlString, value];
+        if( [_urlString rangeOfString:@"?"].location == NSNotFound ) {
+            urlStringWithQueries = [NSString stringWithFormat: @"%@?%@", _urlString, value];
+        } else {
+            urlStringWithQueries = [NSString stringWithFormat: @"%@&%@", _urlString, value];
+        }
 	}
 	
 	if( (url = [NSURL URLWithString: urlStringWithQueries]) == nil ) {
