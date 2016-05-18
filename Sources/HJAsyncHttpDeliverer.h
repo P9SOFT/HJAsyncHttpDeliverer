@@ -94,17 +94,20 @@ typedef enum _HJAsyncHttpDelivererPostContentType_
 - (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath;
 - (BOOL) setDeleteWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
 
+- (id) valueForQueryStringField: (NSString *)fieldName;
 - (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName;
 - (BOOL) setValuesFromQueryStringDict: (NSDictionary *)dict;
 - (void) removeValueForQueryStringField: (NSString *)fieldName;
 - (void) clearAllQueryStringFields;
 
+- (NSString *) valueForHeaderField: (NSString *)fieldName;
 - (BOOL) setValue: (NSString *)value forHeaderField: (NSString *)fieldName;
 - (BOOL) setValuesFromHeaderFieldDict: (NSDictionary *)dict;
 - (void) removeValueForHeaderField: (NSString *)fieldName;
 - (void) clearAllHeaderFields;
 
-- (BOOL) setValue: (NSString *)value forFormDataField: (NSString *)fieldName;
+- (id) valueForFormDataField: (NSString *)fieldName;
+- (BOOL) setValue: (id)value forFormDataField: (NSString *)fieldName;
 - (BOOL) setData: (NSData *)data forFormDataField: (NSString *)fieldName fileName: (NSString *)fileName contentType: (NSString *)contentType;
 - (BOOL) setFileForStreammingUpload: (NSString *)filePath forFormDataField: (NSString *)fieldName fileName: (NSString *)fileName contentType: (NSString *)contentType;
 - (BOOL) setValuesFromFormDataDict: (NSDictionary *)dict;

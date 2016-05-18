@@ -218,7 +218,11 @@
         if( [_formDataFieldDict count] > 0 ) {
             for( fieldName in _formDataFieldDict ) {
                 anObject = [_formDataFieldDict objectForKey: fieldName];
-                if( [anObject isKindOfClass: [NSString class]] == YES ) {
+                if( [anObject isKindOfClass: [NSNumber class]] == YES ) {
+                    value = [anObject stringValue];
+                    [_sendData appendData: boundaryData];
+                    [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
+                } else if( [anObject isKindOfClass: [NSString class]] == YES ) {
                     value = (NSString *)anObject;
                     [_sendData appendData: boundaryData];
                     [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
@@ -234,6 +238,10 @@
                     }
                     [_sendData appendData: data];
                     [_sendData appendData: [[NSString stringWithFormat: @"\r\n"] dataUsingEncoding: NSUTF8StringEncoding]];
+                } else {
+                    value = [anObject description];
+                    [_sendData appendData: boundaryData];
+                    [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
                 }
             }
             [_sendData appendData: [[NSString stringWithFormat: @"--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
@@ -579,6 +587,15 @@
     return YES;
 }
 
+- (id) valueForQueryStringField: (NSString *)fieldName
+{
+    if( [fieldName length] <= 0 ) {
+        return nil;
+    }
+    
+    return [_queryStringFieldDict objectForKey:fieldName];
+}
+
 - (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName
 {
 	if( (value == nil) || ([fieldName length] <= 0) ) {
@@ -613,6 +630,15 @@
 - (void) clearAllQueryStringFields
 {
 	[_queryStringFieldDict removeAllObjects];
+}
+
+- (NSString *) valueForHeaderField: (NSString *)fieldName
+{
+    if( [fieldName length] <= 0 ) {
+        return nil;
+    }
+    
+    return [_headerFieldDict objectForKey:fieldName];
 }
 
 - (BOOL) setValue: (NSString *)value forHeaderField: (NSString *)fieldName
@@ -651,9 +677,18 @@
 	[_headerFieldDict removeAllObjects];
 }
 
-- (BOOL) setValue: (NSString *)value forFormDataField: (NSString *)fieldName
+- (id) valueForFormDataField: (NSString *)fieldName
 {
-	if( ([value length] <= 0 ) || ([fieldName length] <= 0) ) {
+    if( [fieldName length] <= 0 ) {
+        return nil;
+    }
+    
+    return [_formDataFieldDict objectForKey:fieldName];
+}
+
+- (BOOL) setValue: (id)value forFormDataField: (NSString *)fieldName
+{
+	if( (value == nil) || ([fieldName length] <= 0) ) {
 		return NO;
 	}
 		
