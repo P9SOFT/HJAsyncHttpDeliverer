@@ -1083,8 +1083,6 @@
 {
 	_response = response;
 	
-	HYTRACE( @"- HJAsyncHttpDeliverer [%d] http status code [%ld]", _issuedId, (long)((NSHTTPURLResponse *)response).statusCode );
-	
 	if( _notifyStatus == YES ) {
 		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
 											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
@@ -1165,12 +1163,13 @@
 	HYTRACE_BLOCK
 	(
 		HYTRACE( @"- HJAsyncHttpDeliverer [%d] request failed", _issuedId );
-		HYTRACE( @"- url    [%@]", [_request URL] );
+        HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
+		HYTRACE( @"- url [%@]", [_request URL] );
 		HYTRACE( @"- method [%@]", [_request HTTPMethod] );
 		for( NSString *key in [_request allHTTPHeaderFields] ) {
 			HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
 		}
-		HYTRACE( @"- body    [%@]", [[NSString alloc] initWithData: [_request HTTPBody] encoding: NSUTF8StringEncoding] );
+		HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: [_request HTTPBody] encoding: NSUTF8StringEncoding] );
 	)
 	
 	[self resetTransfer];
@@ -1189,21 +1188,26 @@
 		[_closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
 	}
 	
-	HYTRACE( @"- HJAsyncHttpDeliverer [%d] request end", _issuedId );
-	
-	if( _receivedData != nil ) {
-		[_closeQuery setParameter: _receivedData forKey: HJAsyncHttpDelivererParameterKeyBody];
-	}
+    if( _receivedData != nil ) {
+        [_closeQuery setParameter: _receivedData forKey: HJAsyncHttpDelivererParameterKeyBody];
+    }
 	
 	HYTRACE_BLOCK
 	(
+        HYTRACE( @"- HJAsyncHttpDeliverer [%d] request end", _issuedId );
+        HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
+        HYTRACE( @"- url [%@]", [_request URL] );
+        HYTRACE( @"- method [%@]", [_request HTTPMethod] );
+        for( NSString *key in [_request allHTTPHeaderFields] ) {
+            HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
+        }
 		if( _receivedData != nil ) {
-			HYTRACE( @"- receivced data : [%@]", [[NSString alloc] initWithData: _receivedData encoding: NSUTF8StringEncoding] );
+			HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: _receivedData encoding: NSUTF8StringEncoding] );
 		} else {
 			if( ([_downloadFilePath length] > 0) && (_fileHandle != nil) ) {
-				HYTRACE( @"- received data : [%lld]", [_fileHandle offsetInFile] );
+				HYTRACE( @"- body length [%lld]", [_fileHandle offsetInFile] );
 			} else {
-				HYTRACE( @"- receivced data : EMPTY" );
+				HYTRACE( @"- empty body" );
 			}
 		}
 	)
