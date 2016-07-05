@@ -1166,8 +1166,9 @@
         HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
 		HYTRACE( @"- url [%@]", [_request URL] );
 		HYTRACE( @"- method [%@]", [_request HTTPMethod] );
-		for( NSString *key in [_request allHTTPHeaderFields] ) {
-			HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
+        NSDictionary *allHeaderFields = ((NSHTTPURLResponse *)_response).allHeaderFields;
+		for( NSString *key in allHeaderFields ) {
+			HYTRACE( @"- header [%@][%@]", key, [allHeaderFields objectForKey: key] );
 		}
 		HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: [_request HTTPBody] encoding: NSUTF8StringEncoding] );
 	)
@@ -1198,9 +1199,10 @@
         HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
         HYTRACE( @"- url [%@]", [_request URL] );
         HYTRACE( @"- method [%@]", [_request HTTPMethod] );
-        for( NSString *key in [_request allHTTPHeaderFields] ) {
-            HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
-        }
+         NSDictionary *allHeaderFields = ((NSHTTPURLResponse *)_response).allHeaderFields;
+         for( NSString *key in allHeaderFields ) {
+             HYTRACE( @"- header [%@][%@]", key, [allHeaderFields objectForKey: key] );
+         }
 		if( _receivedData != nil ) {
 			HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: _receivedData encoding: NSUTF8StringEncoding] );
 		} else {
