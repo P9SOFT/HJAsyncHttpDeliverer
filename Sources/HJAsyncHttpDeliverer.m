@@ -1115,8 +1115,13 @@
 	NSUInteger		transferLength;
 	
 	if( _fileHandle != nil ) {
-		[_fileHandle writeData: data];
-		transferLength = (NSUInteger)[_fileHandle offsetInFile];
+        @try {
+            [_fileHandle writeData: data];
+            transferLength = (NSUInteger)[_fileHandle offsetInFile];
+        } @catch (NSException *exception) {
+            [self connection:connection didFailWithError:nil];
+            return;
+        }
 	} else {
 		if( _receivedData == nil ) {
 			_receivedData = [[NSMutableData alloc] init];
