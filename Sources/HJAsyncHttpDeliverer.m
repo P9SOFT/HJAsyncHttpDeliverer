@@ -14,7 +14,39 @@
 #define		kTransferBufferSize			8192
 
 
-@interface HJAsyncHttpDeliverer( HJAsyncHttpDelivererPrivate )
+@interface HJAsyncHttpDeliverer()
+{
+    NSMutableURLRequest		*_request;
+    NSURLConnection			*_connection;
+    NSURLResponse			*_response;
+    NSMutableData			*_sendData;
+    NSMutableData			*_receivedData;
+    BOOL					_notifyStatus;
+    NSString				*_urlString;
+    NSMutableDictionary		*_queryStringFieldDict;
+    NSMutableDictionary		*_headerFieldDict;
+    NSMutableDictionary		*_formDataFieldDict;
+    NSMutableDictionary		*_formDataFileNameDict;
+    NSMutableDictionary		*_formDataContentTypeDict;
+    NSString				*_uploadFileFormDataField;
+    NSString				*_uploadFileName;
+    NSString				*_uploadFileContentType;
+    NSString				*_uploadFilePath;
+    NSString				*_downloadFilePath;
+    NSFileHandle			*_fileHandle;
+    NSString				*_multipartBoundaryString;
+    NSArray					*_trustedHosts;
+    NSNumber				*_lastUploadContentLengthNumber;
+    NSInteger				_transferBufferSize;
+    BOOL					_playWithLimitPool;
+    uint8_t					*_buffer;
+    NSUInteger				_bufferSize;
+    NSUInteger				_filledSize;
+    NSUInteger				_lookingIndex;
+    NSOutputStream			*_producerStream;
+    NSInputStream			*_fileStream;
+    NSMutableDictionary		*_sharedDict;
+}
 
 - (NSString *) stringForUrlEncoded: (NSString *)string;
 - (NSString *) stringForUrlEncodedFromDict: (NSMutableDictionary *)dict;
@@ -43,7 +75,7 @@
 @synthesize trustedHosts = _trustedHosts;
 @dynamic transferBufferSize;
 
-- (id) initWithCloseQuery: (id)anQuery
+- (instancetype) initWithCloseQuery: (id)anQuery
 {
 	if( (self = [super initWithCloseQuery: anQuery]) != nil ) {
 		if( (_request = [[NSMutableURLRequest alloc] init]) == nil ) {
@@ -94,7 +126,7 @@
 	id				anObject;
 	NSMutableString	*string;
 	
-	if( [dict count] <= 0 ) {
+	if( dict.count <= 0 ) {
 		return nil;
 	}
 	
@@ -103,7 +135,7 @@
 	}
 	
 	for( key in dict ) {
-		anObject = [dict objectForKey: key];
+		anObject = dict[key];
         if( [anObject isKindOfClass: [NSNumber class]] == YES ) {
             value = [anObject stringValue];
         } else if( [anObject isKindOfClass: [NSString class]] == YES ) {
@@ -115,7 +147,7 @@
 		}
 		encodedKey = [self stringForUrlEncoded: key];
 		encodedValue = [self stringForUrlEncoded: value];
-		if( [string length] <= 0 ) {
+		if( string.length <= 0 ) {
 			[string appendFormat: @"%@=%@", encodedKey, encodedValue];
 		} else {
 			[string appendFormat: @"&%@=%@", encodedKey, encodedValue];
@@ -173,7 +205,7 @@
 
 - (NSString *) suggestFileNameForFilePath: (NSString *)filePath
 {
-	return [filePath lastPathComponent];
+	return filePath.lastPathComponent;
 }
 
 - (NSString *) suggestMimeTypeForFilePath: (NSString *)filePath
@@ -182,7 +214,7 @@
 	CFStringRef	uti;
 	CFStringRef	mimeType;
 	
-	if( (pathExtention = [filePath pathExtension]) == nil ) {
+	if( (pathExtention = filePath.pathExtension) == nil ) {
 		return nil;
 	}
 	
@@ -204,20 +236,20 @@
 	NSString	*fileContentType;
 	NSError		*error;
 	
-	[_sendData setLength: 0];
+	_sendData.length = 0;
 	
 	boundaryData = [[NSString stringWithFormat: @"--%@\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding];
 	
-    if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/x-www-form-urlencoded"] == YES ) {
-        if( [_formDataFieldDict count] > 0 ) {
+    if( [_headerFieldDict[@"Content-Type"] isEqualToString: @"application/x-www-form-urlencoded"] == YES ) {
+        if( _formDataFieldDict.count > 0 ) {
             if( (value = [self stringForUrlEncodedFromDict: _formDataFieldDict]) != nil ) {
                 [_sendData appendData: [value dataUsingEncoding: NSUTF8StringEncoding]];
             }
         }
-    } else if( [[_headerFieldDict objectForKey: @"Content-Type"] rangeOfString: @"multipart/form-data"].location != NSNotFound ) {
-        if( [_formDataFieldDict count] > 0 ) {
+    } else if( [_headerFieldDict[@"Content-Type"] rangeOfString: @"multipart/form-data"].location != NSNotFound ) {
+        if( _formDataFieldDict.count > 0 ) {
             for( fieldName in _formDataFieldDict ) {
-                anObject = [_formDataFieldDict objectForKey: fieldName];
+                anObject = _formDataFieldDict[fieldName];
                 if( [anObject isKindOfClass: [NSNumber class]] == YES ) {
                     value = [anObject stringValue];
                     [_sendData appendData: boundaryData];
@@ -228,10 +260,10 @@
                     [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", fieldName, value] dataUsingEncoding: NSUTF8StringEncoding]];
                 } else if( [anObject isKindOfClass: [NSData class]] == YES ) {
                     data = (NSData *)anObject;
-                    fileName = [_formDataFileNameDict objectForKey: fieldName];
-                    fileContentType = [_formDataContentTypeDict objectForKey: fieldName];
+                    fileName = _formDataFileNameDict[fieldName];
+                    fileContentType = _formDataContentTypeDict[fieldName];
                     [_sendData appendData: boundaryData];
-                    if( ([fileName length] > 0) && ([fileContentType length] > 0) ) {
+                    if( (fileName.length > 0) && (fileContentType.length > 0) ) {
                         [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\nContent-Type: %@\r\n\r\n", fieldName, fileName, fileContentType] dataUsingEncoding: NSUTF8StringEncoding]];
                     } else {
                         [_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", fieldName] dataUsingEncoding: NSUTF8StringEncoding]];
@@ -246,8 +278,8 @@
             }
             [_sendData appendData: [[NSString stringWithFormat: @"--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
         }
-    } else if( [[_headerFieldDict objectForKey: @"Content-Type"] isEqualToString: @"application/json"] == YES ) {
-        if( [_formDataFieldDict count] > 0 ) {
+    } else if( [_headerFieldDict[@"Content-Type"] isEqualToString: @"application/json"] == YES ) {
+        if( _formDataFieldDict.count > 0 ) {
             if( [NSJSONSerialization isValidJSONObject: _formDataFieldDict] == YES ) {
                 if( (data = [NSJSONSerialization dataWithJSONObject: _formDataFieldDict options: NSJSONWritingPrettyPrinted error: &error]) != nil ) {
                     [_sendData appendData: data];
@@ -260,14 +292,14 @@
         }
     }
 	
-	if( [_uploadFilePath length] > 0 ) {
+	if( _uploadFilePath.length > 0 ) {
 		[_sendData appendData: boundaryData];
 		[_sendData appendData: [[NSString stringWithFormat: @"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\nContent-Type: %@\r\n\r\n", _uploadFileFormDataField, _uploadFileName, _uploadFileContentType] dataUsingEncoding: NSUTF8StringEncoding]];
-		_bufferSize = ([_sendData length] > _transferBufferSize) ? [_sendData length] : _transferBufferSize;
+		_bufferSize = (_sendData.length > _transferBufferSize) ? _sendData.length : _transferBufferSize;
 		if( (_buffer = (uint8_t *)malloc( (size_t)_bufferSize )) == NULL ) {
 			return NO;
 		}
-		_filledSize = [_sendData length];
+		_filledSize = _sendData.length;
 		_lookingIndex = 0;
 		memcpy( _buffer, [_sendData bytes], _filledSize );
 	}
@@ -280,7 +312,7 @@
 	NSUInteger			contentLength;
 	NSInputStream		*inputStream;
 	
-	if( [_uploadFilePath length] > 0 ) {
+	if( _uploadFilePath.length > 0 ) {
 			
 		if( (_fileStream = [[NSInputStream alloc] initWithFileAtPath: _uploadFilePath]) == nil ) {
 			return NO;
@@ -296,33 +328,33 @@
 		
 		[_sendData appendData: [[NSString stringWithFormat: @"\r\n--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
 		
-		contentLength = [_sendData length];
-		contentLength += [(NSNumber *)[[[NSFileManager defaultManager] attributesOfItemAtPath: _uploadFilePath error: NULL] objectForKey: NSFileSize] unsignedIntegerValue];
+		contentLength = _sendData.length;
+		contentLength += ((NSNumber *)[[NSFileManager defaultManager] attributesOfItemAtPath: _uploadFilePath error: NULL][NSFileSize]).unsignedIntegerValue;
 		
-		[_request setHTTPBodyStream: inputStream];
+		_request.HTTPBodyStream = inputStream;
 		
 	} else {
 		
-		if( (contentLength = [_sendData length]) > 0 ) {
-			[_request setHTTPBody: _sendData];
+		if( (contentLength = _sendData.length) > 0 ) {
+			_request.HTTPBody = _sendData;
 		}
 		
 	}
 	
 	if( contentLength <= 0 ) {
-		contentLength = [[_request HTTPBody] length];
+		contentLength = _request.HTTPBody.length;
 	}
 	
-	_lastUploadContentLengthNumber = [NSNumber numberWithUnsignedInteger: contentLength];
-	[_request setValue: [[NSNumber numberWithUnsignedInteger: contentLength] stringValue] forHTTPHeaderField: @"Content-Length"];
+	_lastUploadContentLengthNumber = @(contentLength);
+	[_request setValue: @(contentLength).stringValue forHTTPHeaderField: @"Content-Length"];
 	
 	HYTRACE_BLOCK
 	(
-		HYTRACE( @"- HJAsyncHttpDeliverer [%d] request start", _issuedId );
+		HYTRACE( @"- HJAsyncHttpDeliverer [%d] request start", self.issuedId );
 		HYTRACE( @"- url    [%@]", [_request URL] );
 		HYTRACE( @"- method [%@]", [_request HTTPMethod] );
 		for( NSString *key in [_request allHTTPHeaderFields] ) {
-			HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
+			HYTRACE( @"- header [%@][%@]", key, [_request allHTTPHeaderFields][key] );
 		}
 		if( [_uploadFilePath length] > 0 ) {
 			HYTRACE( @"- body    STREAMMING" );
@@ -361,14 +393,12 @@
 
 - (void) doneWithError
 {
-	[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
+	[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusFailed], HJAsyncHttpDelivererParameterKeyStatus,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusFailed)}
 		 ];
 	}
 	
@@ -387,7 +417,7 @@
 
 - (BOOL) setGetWithUrlString: (NSString *)urlString
 {
-	if( [urlString length] <= 0 ) {
+	if( urlString.length <= 0 ) {
 		return NO;
 	}
 	
@@ -410,7 +440,7 @@
 
 - (BOOL) setGetWithUrlString: (NSString *)urlString toFilePath: (NSString *)filePath
 {
-	if( [filePath length] <= 0 ) {
+	if( filePath.length <= 0 ) {
 		return NO;
 	}
 	
@@ -438,7 +468,7 @@
 
 - (BOOL) setPostWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType
 {
-	if( [urlString length] <= 0 ) {
+	if( urlString.length <= 0 ) {
 		return NO;
 	}
 		
@@ -458,7 +488,7 @@
 	}
 	
 	self.urlString = urlString;
-	[self setMethod: @"POST"];
+	self.method = @"POST";
 	
 	[self setValuesFromFormDataDict: dict];
 	
@@ -467,7 +497,7 @@
 
 - (BOOL) setPostUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data
 {
-	if( ([urlString length] <= 0) || ([fieldName length] <= 0) || ([fileName length] <= 0) || ([fileContentType length] <=0) || ([data length] <= 0) ) {
+	if( (urlString.length <= 0) || (fieldName.length <= 0) || (fileName.length <= 0) || (fileContentType.length <=0) || (data.length <= 0) ) {
 		return NO;
 	}
 	
@@ -482,7 +512,7 @@
 
 - (BOOL) setPostUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath
 {
-	if( [urlString length] <= 0 ) {
+	if( urlString.length <= 0 ) {
 		return NO;
 	}
 	
@@ -499,7 +529,7 @@
 
 - (BOOL) setPutWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType
 {
-    if( [urlString length] <= 0 ) {
+    if( urlString.length <= 0 ) {
         return NO;
     }
     
@@ -528,7 +558,7 @@
 
 - (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data
 {
-    if( ([urlString length] <= 0) || ([fieldName length] <= 0) || ([fileName length] <= 0) || ([fileContentType length] <=0) || ([data length] <= 0) ) {
+    if( (urlString.length <= 0) || (fieldName.length <= 0) || (fileName.length <= 0) || (fileContentType.length <=0) || (data.length <= 0) ) {
         return NO;
     }
     
@@ -543,7 +573,7 @@
 
 - (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath
 {
-    if( [urlString length] <= 0 ) {
+    if( urlString.length <= 0 ) {
         return NO;
     }
     
@@ -560,7 +590,7 @@
 
 - (BOOL) setDeleteWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType
 {
-    if( [urlString length] <= 0 ) {
+    if( urlString.length <= 0 ) {
         return NO;
     }
     
@@ -589,27 +619,27 @@
 
 - (id) valueForQueryStringField: (NSString *)fieldName
 {
-    if( [fieldName length] <= 0 ) {
+    if( fieldName.length <= 0 ) {
         return nil;
     }
     
-    return [_queryStringFieldDict objectForKey:fieldName];
+    return _queryStringFieldDict[fieldName];
 }
 
 - (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName
 {
-	if( (value == nil) || ([fieldName length] <= 0) ) {
+	if( (value == nil) || (fieldName.length <= 0) ) {
 		return NO;
 	}
 	
-	[_queryStringFieldDict setObject: value forKey: fieldName];
+	_queryStringFieldDict[fieldName] = value;
 	
 	return YES;
 }
 
 - (BOOL) setValuesFromQueryStringDict: (NSDictionary *)dict
 {
-	if( [dict count] <= 0 ) {
+	if( dict.count <= 0 ) {
 		return YES;
 	}
 	
@@ -620,7 +650,7 @@
 
 - (void) removeValueForQueryStringField: (NSString *)fieldName
 {
-	if( [fieldName length] <= 0 ) {
+	if( fieldName.length <= 0 ) {
 		return;
 	}
 	
@@ -634,27 +664,27 @@
 
 - (NSString *) valueForHeaderField: (NSString *)fieldName
 {
-    if( [fieldName length] <= 0 ) {
+    if( fieldName.length <= 0 ) {
         return nil;
     }
     
-    return [_headerFieldDict objectForKey:fieldName];
+    return _headerFieldDict[fieldName];
 }
 
 - (BOOL) setValue: (NSString *)value forHeaderField: (NSString *)fieldName
 {
-	if( ([value length] <= 0) || ([fieldName length] <= 0) ) {
+	if( (value.length <= 0) || (fieldName.length <= 0) ) {
 		return NO;
 	}
 	
-	[_headerFieldDict setObject: value forKey: fieldName];
+	_headerFieldDict[fieldName] = value;
 	
 	return YES;
 }
 
 - (BOOL) setValuesFromHeaderFieldDict: (NSDictionary *)dict
 {
-	if( [dict count] <= 0 ) {
+	if( dict.count <= 0 ) {
 		return YES;
 	}
 	
@@ -665,7 +695,7 @@
 
 - (void) removeValueForHeaderField: (NSString *)fieldName
 {
-	if( [fieldName length] <= 0 ) {
+	if( fieldName.length <= 0 ) {
 		return;
 	}
 	
@@ -679,33 +709,33 @@
 
 - (id) valueForFormDataField: (NSString *)fieldName
 {
-    if( [fieldName length] <= 0 ) {
+    if( fieldName.length <= 0 ) {
         return nil;
     }
     
-    return [_formDataFieldDict objectForKey:fieldName];
+    return _formDataFieldDict[fieldName];
 }
 
 - (BOOL) setValue: (id)value forFormDataField: (NSString *)fieldName
 {
-	if( (value == nil) || ([fieldName length] <= 0) ) {
+	if( (value == nil) || (fieldName.length <= 0) ) {
 		return NO;
 	}
 		
-	[_formDataFieldDict setObject: value forKey: fieldName];
+	_formDataFieldDict[fieldName] = value;
 	
 	return YES;
 }
 
 - (BOOL) setData: (NSData *)data forFormDataField: (NSString *)fieldName fileName: (NSString *)fileName contentType: (NSString *)contentType
 {
-	if( ([data length] <= 0) || ([fieldName length] <= 0) || ([fileName length] <= 0) || ([contentType length] <= 0) ) {
+	if( (data.length <= 0) || (fieldName.length <= 0) || (fileName.length <= 0) || (contentType.length <= 0) ) {
 		return NO;
 	}
 	
-	[_formDataFieldDict setObject: data forKey: fieldName];
-	[_formDataFileNameDict setObject: fileName forKey: fieldName];
-	[_formDataContentTypeDict setObject: contentType forKey: fieldName];
+	_formDataFieldDict[fieldName] = data;
+	_formDataFileNameDict[fieldName] = fileName;
+	_formDataContentTypeDict[fieldName] = contentType;
 	
 	return YES;
 }
@@ -714,7 +744,7 @@
 {
 	BOOL		isDirectory;
 	
-	if( ([filePath length] <= 0) || ([fieldName length] <= 0) || ([fileName length] <= 0) || ([contentType length] <= 0) ) {
+	if( (filePath.length <= 0) || (fieldName.length <= 0) || (fileName.length <= 0) || (contentType.length <= 0) ) {
 		return NO;
 	}
 	if( [[NSFileManager defaultManager] fileExistsAtPath: filePath isDirectory: &isDirectory] == NO ) {
@@ -729,14 +759,14 @@
 	_uploadFileName = fileName;
 	_uploadFilePath = filePath;
 	
-	if( [_uploadFileName length] <= 0 ) {
+	if( _uploadFileName.length <= 0 ) {
 		_uploadFileName = [self suggestFileNameForFilePath: _uploadFilePath];
 	}
-	if( [_uploadFileContentType length] <= 0 ) {
+	if( _uploadFileContentType.length <= 0 ) {
 		_uploadFileContentType = [self suggestMimeTypeForFilePath: _uploadFileName];
 	}
 	
-	if( ([_uploadFileName length] <= 0) || ([_uploadFileContentType length] <= 0) ) {
+	if( (_uploadFileName.length <= 0) || (_uploadFileContentType.length <= 0) ) {
 		_uploadFileFormDataField = nil;
 		_uploadFileContentType = nil;
 		_uploadFileName = nil;
@@ -749,7 +779,7 @@
 
 - (BOOL) setValuesFromFormDataDict: (NSDictionary *)dict
 {
-	if( [dict count] <= 0 ) {
+	if( dict.count <= 0 ) {
 		return YES;
 	}
 	
@@ -760,7 +790,7 @@
 
 - (void) removeValueForFormDataField: (NSString *)fieldName
 {
-	if( [fieldName length] <= 0 ) {
+	if( fieldName.length <= 0 ) {
 		return;
 	}
 	
@@ -774,11 +804,11 @@
 
 - (BOOL) setBodyData: (NSData *)bodyData
 {
-	if( [bodyData length] <= 0 ) {
+	if( bodyData.length <= 0 ) {
 		return NO;
 	}
 	
-	[_request setHTTPBody: bodyData];
+	_request.HTTPBody = bodyData;
 	
 	return YES;
 }
@@ -795,11 +825,9 @@
 	[self resetTransfer];
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusStart], HJAsyncHttpDelivererParameterKeyStatus,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusStart)}
 		 ];
 	}
 	
@@ -816,20 +844,20 @@
 	if( (url = [NSURL URLWithString: urlStringWithQueries]) == nil ) {
 		url = [NSURL URLWithString: [urlStringWithQueries stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
 	}
-	[_request setURL: url];
+	_request.URL = url;
 	
-	if( [_headerFieldDict count] > 0 ) {
-		[_request setAllHTTPHeaderFields: _headerFieldDict];
+	if( _headerFieldDict.count > 0 ) {
+		_request.allHTTPHeaderFields = _headerFieldDict;
 	}
 	
-	if( ([[_request HTTPMethod] isEqualToString: @"GET"] == YES) ) {
+	if( ([_request.HTTPMethod isEqualToString: @"GET"] == YES) ) {
 		
 		_fileHandle = nil;
 		_connection = nil;
 		fileCreated = NO;
 		
-		if( [_downloadFilePath length] > 0 ) {
-			if( (baseDirectory = [_downloadFilePath stringByDeletingLastPathComponent]) != nil ) {
+		if( _downloadFilePath.length > 0 ) {
+			if( (baseDirectory = _downloadFilePath.stringByDeletingLastPathComponent) != nil ) {
 				if( [[NSFileManager defaultManager] fileExistsAtPath: baseDirectory isDirectory: &isDirecotry] == NO ) {
 					[[NSFileManager defaultManager] createDirectoryAtPath: baseDirectory withIntermediateDirectories: YES attributes: nil error: nil];
 				} else {
@@ -848,7 +876,7 @@
 			_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO];
 		}
 		if( _connection == nil ) {
-			[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
+			[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
 			if( fileCreated == YES ) {
 				[[NSFileManager defaultManager] removeItemAtPath: _downloadFilePath error: nil];
 			}
@@ -860,17 +888,17 @@
 		HYTRACE_BLOCK
 		(
 			if( _connection != nil ) {
-				HYTRACE( @"- HJAsyncHttpDeliverer [%d] request start", _issuedId );
+				HYTRACE( @"- HJAsyncHttpDeliverer [%d] request start", self.issuedId );
 				HYTRACE( @"- url    [%@]", [_request URL] );
 				HYTRACE( @"- method [%@]", [_request HTTPMethod] );
 				for( NSString *key in [_request allHTTPHeaderFields] ) {
-					HYTRACE( @"- header [%@][%@]", key, [[_request allHTTPHeaderFields] objectForKey: key] );
+					HYTRACE( @"- header [%@][%@]", key, [_request allHTTPHeaderFields][key] );
 				}
 				HYTRACE( @"- body    [%@]", [[NSString alloc] initWithData: [_request HTTPBody] encoding: NSUTF8StringEncoding] );
 			}
 		)
 		
-	} else if( ([[_request HTTPMethod] isEqualToString: @"POST"] == YES) || ([[_request HTTPMethod] isEqualToString: @"PUT"] == YES) || ([[_request HTTPMethod] isEqualToString: @"DELETE"] == YES) ) {
+	} else if( ([_request.HTTPMethod isEqualToString: @"POST"] == YES) || ([_request.HTTPMethod isEqualToString: @"PUT"] == YES) || ([_request.HTTPMethod isEqualToString: @"DELETE"] == YES) ) {
 		
 		dispatch_async( dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 			
@@ -881,7 +909,7 @@
 			
 			dispatch_async( dispatch_get_main_queue(), ^{
 				
-				if( [[_closeQuery parameterForKey: HJAsyncHttpDelivererParameterKeyFailed] boolValue] == NO ) {
+				if( [[self.closeQuery parameterForKey: HJAsyncHttpDelivererParameterKeyFailed] boolValue] == NO ) {
 					if( [self bindConnection] == NO ) {
 						[self resetTransfer];
 						[self doneWithError];
@@ -895,7 +923,7 @@
 	} else {
 		
 		if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
-			[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
+			[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
 			return NO;
 		}
         [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
@@ -908,21 +936,19 @@
 
 - (void) willDone
 {
-	[_closeQuery setParameter: [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId] forKey: HJAsyncHttpDelivererParameterKeyIssuedId];
+	[self.closeQuery setParameter: @((NSUInteger)self.issuedId) forKey: HJAsyncHttpDelivererParameterKeyIssuedId];
 }
 
 - (void) willCancel
 {
-	[_closeQuery setParameter: [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId] forKey: HJAsyncHttpDelivererParameterKeyIssuedId];
-	[_closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyCanceled];
-	[_closeQuery setParameter: [NSNumber numberWithUnsignedInt: [self passedMilisecondFromBind]] forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
+	[self.closeQuery setParameter: @((NSUInteger)self.issuedId) forKey: HJAsyncHttpDelivererParameterKeyIssuedId];
+	[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyCanceled];
+	[self.closeQuery setParameter: @(self.passedMilisecondFromBind) forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusCanceled], HJAsyncHttpDelivererParameterKeyStatus,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusCanceled)}
 		 ];
 	}
 }
@@ -942,13 +968,13 @@
 	NSString	*description;
 	
 	description = [NSString stringWithFormat: @"<request url=\"%@\" method=\"%@\"/>", _request.URL, _request.HTTPMethod];
-	if( [_limiterName length] > 0 ) {
-		description = [description stringByAppendingFormat: @"<limiter name=\"%@\" count=\"%ld\"/>", _limiterName, (long)_limiterCount];
+	if( (self.limiterName).length > 0 ) {
+		description = [description stringByAppendingFormat: @"<limiter name=\"%@\" count=\"%ld\"/>", self.limiterName, (long)self.limiterCount];
 	}
-	if( [_uploadFileName length] > 0 ) {
+	if( _uploadFileName.length > 0 ) {
 		description = [description stringByAppendingFormat: @"<upload_file_name=\"%@\"", _uploadFileName];
 	}
-	if( [_uploadFilePath length] > 0 ) {
+	if( _uploadFilePath.length > 0 ) {
 		description = [description stringByAppendingFormat: @"<upload_file_path=\"%@\"", _uploadFilePath];
 	}
 	   
@@ -962,7 +988,7 @@
 
 - (void) setCachePolicy: (NSURLRequestCachePolicy)cachePolicy
 {
-	[_request setCachePolicy: cachePolicy];
+	_request.cachePolicy = cachePolicy;
 }
 
 - (NSTimeInterval) timeoutInterval
@@ -972,7 +998,7 @@
 
 - (void) setTimeoutInterval: (NSTimeInterval)timeoutInterval
 {
-	[_request setTimeoutInterval: timeoutInterval];
+	_request.timeoutInterval = timeoutInterval;
 }
 
 - (NSString *) urlString
@@ -992,7 +1018,7 @@
 
 - (void) setMethod: (NSString *)method
 {
-	[_request setHTTPMethod: method];
+	_request.HTTPMethod = method;
 }
 
 - (NSInteger) transferBufferSize
@@ -1022,13 +1048,11 @@
 	switch( streamEvent ) {
 		case NSStreamEventOpenCompleted :
 			if( _notifyStatus == YES ) {
-				fileSizeNumber = (NSNumber *)[[[NSFileManager defaultManager] attributesOfItemAtPath: _uploadFilePath error: NULL] objectForKey: NSFileSize];
-				[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-													 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-													 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-													 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererstatusConnected], HJAsyncHttpDelivererParameterKeyStatus,
-													 fileSizeNumber, HJAsyncHttpDelivererParameterKeyContentLength,
-													 nil]
+				fileSizeNumber = (NSNumber *)[[NSFileManager defaultManager] attributesOfItemAtPath: _uploadFilePath error: NULL][NSFileSize];
+				[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+													 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+													 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererstatusConnected),
+													 HJAsyncHttpDelivererParameterKeyContentLength: fileSizeNumber}
 				 ];
 			}
 			break;
@@ -1040,7 +1064,7 @@
 						[_fileStream close];
 						_fileStream = nil;
 						boundaryData = [[NSString stringWithFormat: @"\r\n--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding];
-						_filledSize = [boundaryData length];
+						_filledSize = boundaryData.length;
 						memcpy( _buffer, [boundaryData bytes], _filledSize );
 					}
 					_lookingIndex = 0;
@@ -1056,11 +1080,9 @@
 			} else {
 				if( _fileStream == nil ) {
 					if( _notifyStatus == YES ) {
-						[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-															 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-															 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-															 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusDone], HJAsyncHttpDelivererParameterKeyStatus,
-															 nil]
+						[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+															 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+															 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusDone)}
 						 ];
 					}
 					[self closeProducerStream];
@@ -1084,12 +1106,10 @@
 	_response = response;
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererstatusConnected], HJAsyncHttpDelivererParameterKeyStatus,
-											 [NSNumber numberWithLongLong: [response expectedContentLength]], HJAsyncHttpDelivererParameterKeyContentLength,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererstatusConnected),
+											 HJAsyncHttpDelivererParameterKeyContentLength: @(response.expectedContentLength)}
 		 ];
 	}
 }
@@ -1121,23 +1141,21 @@
             [self connection:connection didFailWithError:nil];
             return;
         }
-        transferLength = (NSUInteger)[_fileHandle offsetInFile];
+        transferLength = (NSUInteger)_fileHandle.offsetInFile;
 	} else {
 		if( _receivedData == nil ) {
 			_receivedData = [[NSMutableData alloc] init];
 		}
 		[_receivedData appendData: data];
-		transferLength = [_receivedData length];
+		transferLength = _receivedData.length;
 	}
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusTransfering], HJAsyncHttpDelivererParameterKeyStatus,
-											 [NSNumber numberWithLongLong: transferLength], HJAsyncHttpDelivererParameterKeyAmountTransferedLength,
-											 [NSNumber numberWithLongLong: [data length]], HJAsyncHttpDelivererParameterKeyCurrentTransferedLength,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusTransfering),
+											 HJAsyncHttpDelivererParameterKeyAmountTransferedLength: [NSNumber numberWithLongLong: transferLength],
+											 HJAsyncHttpDelivererParameterKeyCurrentTransferedLength: [NSNumber numberWithLongLong: data.length]}
 		 ];
 	}
 }
@@ -1145,35 +1163,33 @@
 - (void) connection: (NSURLConnection *)connection didSendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite
 {	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusTransfering], HJAsyncHttpDelivererParameterKeyStatus,
-											 _lastUploadContentLengthNumber, HJAsyncHttpDelivererParameterKeyContentLength,
-											 [NSNumber numberWithInteger:totalBytesWritten], HJAsyncHttpDelivererParameterKeyAmountTransferedLength,
-                                             [NSNumber numberWithInteger:totalBytesExpectedToWrite], HJAsyncHttpDelivererParameterKeyExpectedTransferedLength,
-											 [NSNumber numberWithInteger:bytesWritten], HJAsyncHttpDelivererParameterKeyCurrentTransferedLength,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusTransfering),
+											 HJAsyncHttpDelivererParameterKeyContentLength: _lastUploadContentLengthNumber,
+											 HJAsyncHttpDelivererParameterKeyAmountTransferedLength: @(totalBytesWritten),
+                                             HJAsyncHttpDelivererParameterKeyExpectedTransferedLength: @(totalBytesExpectedToWrite),
+											 HJAsyncHttpDelivererParameterKeyCurrentTransferedLength: @(bytesWritten)}
 		 ];
 	}
 }
 
 - (void) connection: (NSURLConnection *)connection didFailWithError: (NSError *)error
 {
-	[_closeQuery setParameter: [NSNumber numberWithUnsignedInt: [self passedMilisecondFromBind]] forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
+	[self.closeQuery setParameter: @(self.passedMilisecondFromBind) forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
 	if( _response != nil ) {
-		[_closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
+		[self.closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
 	}
 	
 	HYTRACE_BLOCK
 	(
-		HYTRACE( @"- HJAsyncHttpDeliverer [%d] request failed", _issuedId );
+		HYTRACE( @"- HJAsyncHttpDeliverer [%d] request failed", self.issuedId );
         HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
 		HYTRACE( @"- url [%@]", [_request URL] );
 		HYTRACE( @"- method [%@]", [_request HTTPMethod] );
         NSDictionary *allHeaderFields = ((NSHTTPURLResponse *)_response).allHeaderFields;
 		for( NSString *key in allHeaderFields ) {
-			HYTRACE( @"- header [%@][%@]", key, [allHeaderFields objectForKey: key] );
+			HYTRACE( @"- header [%@][%@]", key, allHeaderFields[key] );
 		}
 		HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: [_request HTTPBody] encoding: NSUTF8StringEncoding] );
 	)
@@ -1181,7 +1197,7 @@
 	[self resetTransfer];
 	[self doneWithError];
 	
-	if( [_downloadFilePath length] > 0 ) {
+	if( _downloadFilePath.length > 0 ) {
 		[[NSFileManager defaultManager] removeItemAtPath: _downloadFilePath error: nil];
 		_downloadFilePath = nil;
 	}
@@ -1189,24 +1205,24 @@
 
 - (void) connectionDidFinishLoading: (NSURLConnection *)connection
 {
-	[_closeQuery setParameter: [NSNumber numberWithUnsignedInt: [self passedMilisecondFromBind]] forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
+	[self.closeQuery setParameter: @(self.passedMilisecondFromBind) forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
 	if( _response != nil ) {
-		[_closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
+		[self.closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
 	}
 	
     if( _receivedData != nil ) {
-        [_closeQuery setParameter: _receivedData forKey: HJAsyncHttpDelivererParameterKeyBody];
+        [self.closeQuery setParameter: _receivedData forKey: HJAsyncHttpDelivererParameterKeyBody];
     }
 	
 	HYTRACE_BLOCK
 	(
-        HYTRACE( @"- HJAsyncHttpDeliverer [%d] request end", _issuedId );
+        HYTRACE( @"- HJAsyncHttpDeliverer [%d] request end", self.issuedId );
         HYTRACE( @"- status code [%ld]", (long)((NSHTTPURLResponse *)_response).statusCode );
         HYTRACE( @"- url [%@]", [_request URL] );
         HYTRACE( @"- method [%@]", [_request HTTPMethod] );
          NSDictionary *allHeaderFields = ((NSHTTPURLResponse *)_response).allHeaderFields;
          for( NSString *key in allHeaderFields ) {
-             HYTRACE( @"- header [%@][%@]", key, [allHeaderFields objectForKey: key] );
+             HYTRACE( @"- header [%@][%@]", key, allHeaderFields[key] );
          }
 		if( _receivedData != nil ) {
 			HYTRACE( @"- body [%@]", [[NSString alloc] initWithData: _receivedData encoding: NSUTF8StringEncoding] );
@@ -1220,11 +1236,9 @@
 	)
 	
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: [NSDictionary dictionaryWithObjectsAndKeys:
-											 [NSNumber numberWithUnsignedInteger:(NSUInteger)self.issuedId], HJAsyncHttpDelivererParameterKeyIssuedId,
-											 _urlString, HJAsyncHttpDelivererParameterKeyUrlString,
-											 [NSNumber numberWithInteger:(NSInteger)HJAsyncHttpDelivererStatusDone], HJAsyncHttpDelivererParameterKeyStatus,
-											 nil]
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
+											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusDone)}
 		 ];
 	}
 	

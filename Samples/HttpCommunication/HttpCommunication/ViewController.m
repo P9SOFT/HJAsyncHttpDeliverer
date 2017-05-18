@@ -25,7 +25,7 @@
 
 @implementation ViewController
 
-- (id)init
+- (instancetype)init
 {
     if( (self = [super init]) != nil ) {
         // observe SampleManager's notificaion.
@@ -56,10 +56,10 @@
 
 - (void)resignFirstResponderAll
 {
-    if( [self.serverApiUrlTextField isFirstResponder] == YES ) {
+    if( (self.serverApiUrlTextField).isFirstResponder == YES ) {
         [self.serverApiUrlTextField resignFirstResponder];
     }
-    if( [self.parameterTextField isFirstResponder] == YES ) {
+    if( (self.parameterTextField).isFirstResponder == YES ) {
         [self.parameterTextField resignFirstResponder];
     }
 }
@@ -79,7 +79,7 @@
     NSArray *parameters = [self.parameterTextField.text componentsSeparatedByString:@"&"];
     for( NSString *parameter in parameters ) {
         NSArray *pair = [parameter componentsSeparatedByString:@"="];
-        if( [pair count] != 2 ) {
+        if( pair.count != 2 ) {
             return nil;
         }
         paramDict[pair[0]] = pair[1];
@@ -90,7 +90,7 @@
 
 - (void)appendTextToConsole:(NSString *)text
 {
-    if( [text length] == 0 ) {
+    if( text.length == 0 ) {
         return;
     }
     
@@ -133,7 +133,7 @@
     // request HTTP GET method to SampleManager.
     if( self.getButton.selected == YES ) {
         self.transferButton.enabled = NO;
-        if( [paramDict count] > 0 ) {
+        if( paramDict.count > 0 ) {
             [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
         } else {
             [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n", serverApiUrl]];
@@ -146,7 +146,7 @@
     // request HTTP POST method to SampleManager.
     } else if( self.postButton.selected == YES ) {
         self.transferButton.enabled = NO;
-        if( [paramDict count] > 0 ) {
+        if( paramDict.count > 0 ) {
             [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n%@\n", serverApiUrl, paramDict]];
         } else {
             [self appendTextToConsole:[NSString stringWithFormat:@">> REQUEST\n%@\n", serverApiUrl]];
@@ -158,7 +158,7 @@
     } else if( self.downloadFileButton.selected == YES ) {
         self.transferButton.enabled = NO;
         NSArray *searchPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString *documentPath = [searchPaths objectAtIndex:0];
+        NSString *documentPath = searchPaths[0];
         NSString *filePath = [NSString stringWithFormat:@"%@/sample.png", documentPath];
         [[SampleManager defaultManager] requestServerApi:serverApiUrl parameterDict:paramDict downloadFileTo:filePath completion:^(NSMutableDictionary *resultDict) {
             self.transferButton.enabled = YES;
@@ -166,7 +166,7 @@
     // request upload file to SampleManager.
     } else if( self.uploadFileButton.selected == YES ) {
         self.transferButton.enabled = NO;
-        NSString *filePath = [NSString stringWithFormat:@"%@/sample.png", [[NSBundle mainBundle] resourcePath]];
+        NSString *filePath = [NSString stringWithFormat:@"%@/sample.png", [NSBundle mainBundle].resourcePath];
         [[SampleManager defaultManager] requestServerApi:serverApiUrl parameterDict:paramDict formDataFieldName:@"uploadfile" fileName:@"sample.png" contentType:@"image/png" uploadFileFrom:filePath completion:^(NSMutableDictionary *resultDict) {
             self.transferButton.enabled = YES;
         }];

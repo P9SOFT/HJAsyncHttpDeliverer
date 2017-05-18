@@ -197,12 +197,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0276BC621C2A993400ECE423 /* Build configuration list for PBXNativeTarget "HttpCommunication" */;
 			buildPhases = (
-				6C4035BF7B7CB80C34574CE2 /* 📦 Check Pods Manifest.lock */,
+				6C4035BF7B7CB80C34574CE2 /* [CP] Check Pods Manifest.lock */,
 				0276BC311C2A993400ECE423 /* Sources */,
 				0276BC321C2A993400ECE423 /* Frameworks */,
 				0276BC331C2A993400ECE423 /* Resources */,
-				B0A7168B8E2967E942DA27AC /* 📦 Embed Pods Frameworks */,
-				8D523F8C07AF077E63055295 /* 📦 Copy Pods Resources */,
+				B0A7168B8E2967E942DA27AC /* [CP] Embed Pods Frameworks */,
+				8D523F8C07AF077E63055295 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -255,7 +255,7 @@
 		0276BC2D1C2A993400ECE423 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0720;
+				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = "Tae Hyun Na";
 				TargetAttributes = {
 					0276BC341C2A993400ECE423 = {
@@ -320,29 +320,29 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		6C4035BF7B7CB80C34574CE2 /* 📦 Check Pods Manifest.lock */ = {
+		6C4035BF7B7CB80C34574CE2 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "📦 Check Pods Manifest.lock";
+			name = "[CP] Check Pods Manifest.lock";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
-		8D523F8C07AF077E63055295 /* 📦 Copy Pods Resources */ = {
+		8D523F8C07AF077E63055295 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "📦 Copy Pods Resources";
+			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -350,14 +350,14 @@
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-HttpCommunication/Pods-HttpCommunication-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		B0A7168B8E2967E942DA27AC /* 📦 Embed Pods Frameworks */ = {
+		B0A7168B8E2967E942DA27AC /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "📦 Embed Pods Frameworks";
+			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -437,8 +437,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -481,8 +483,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";

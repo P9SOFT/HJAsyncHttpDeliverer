@@ -33,7 +33,7 @@
     // start hydra
     [[Hydra defaultHydra] startAllWorkers];
     
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     self.window.rootViewController = [[ViewController alloc] init];
     [self.window makeKeyAndVisible];
     

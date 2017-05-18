@@ -39,13 +39,13 @@
         // check received data from the result and preprocess it.
         // in this case, get NSMutableDictionary object by parsing JSON format.
         NSData *receivedData = [result parameterForKey:HJAsyncHttpDelivererParameterKeyBody];
-        if( [receivedData length] == 0 ) {
+        if( receivedData.length == 0 ) {
             return [self storeFailedResultWithQuery:anQuery];
         }
         NSMutableDictionary *resultDict = [NSJSONSerialization JSONObjectWithData:receivedData options:NSJSONReadingMutableContainers error:nil];
         if( resultDict == nil ) {
             resultDict = [[NSMutableDictionary alloc] init];
-            [resultDict setObject: [[NSString alloc] initWithData: receivedData encoding: NSUTF8StringEncoding] forKey:@"rawData"];
+            resultDict[@"rawData"] = [[NSString alloc] initWithData: receivedData encoding: NSUTF8StringEncoding];
         }
         
         // set wanted data to result for its key.

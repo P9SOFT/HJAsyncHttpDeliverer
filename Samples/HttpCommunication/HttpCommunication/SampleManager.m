@@ -42,7 +42,7 @@
 
 - (BOOL)standbyWithWorkerName:(NSString *)workerName
 {
-	if( (self.standby == YES) || ([workerName length] <= 0) ) {
+	if( (self.standby == YES) || (workerName.length <= 0) ) {
 		return NO;
 	}
 	
@@ -57,7 +57,7 @@
 - (void)requestServerApi:(NSString *)serverApiUrlString httpMethod:(NSString *)httpMethod parameterDict:(NSDictionary *)parameterDict completion:(void (^)(NSMutableDictionary *))completion
 {
     // check parameter
-    if( ([serverApiUrlString length] == 0) || (([httpMethod isEqualToString:@"GET"] == NO) && ([httpMethod isEqualToString:@"POST"] == NO)) ) {
+    if( (serverApiUrlString.length == 0) || (([httpMethod isEqualToString:@"GET"] == NO) && ([httpMethod isEqualToString:@"POST"] == NO)) ) {
         if( completion != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 completion(nil);
@@ -105,7 +105,7 @@
 - (void)requestServerApi:(NSString *)serverApiUrlString parameterDict:(NSDictionary *)parameterDict downloadFileTo:(NSString *)filePath completion:(void (^)(NSMutableDictionary *))completion
 {
     // check parameter
-    if( ([serverApiUrlString length] == 0) || ([filePath length] == 0) ) {
+    if( (serverApiUrlString.length == 0) || (filePath.length == 0) ) {
         if( completion != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 completion(nil);
@@ -145,7 +145,7 @@
 - (void)requestServerApi:(NSString *)serverApiUrlString parameterDict:(NSDictionary *)parameterDict formDataFieldName:(NSString *)formDataFieldName fileName:(NSString *)fileName contentType:(NSString *)contentType uploadFileFrom:(NSString *)filePath completion:(void (^)(NSMutableDictionary *))completion
 {
     // check parameter
-    if( ([serverApiUrlString length] == 0) || ([formDataFieldName length] == 0) || ([fileName length] == 0) || ([contentType length] == 0) || ([filePath length] == 0) ) {
+    if( (serverApiUrlString.length == 0) || (formDataFieldName.length == 0) || (fileName.length == 0) || (contentType.length == 0) || (filePath.length == 0) ) {
         if( completion != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 completion(nil);
@@ -211,23 +211,23 @@
         }
         return nil;
     }
-    [paramDict setObject:serverApiString forKey:SampleManagerNotifyParameterKeyServerApiUrlString];
+    paramDict[SampleManagerNotifyParameterKeyServerApiUrlString] = serverApiString;
     
     // and request parameters,
     NSMutableDictionary *requestDict = [result parameterForKey:SampleExecutorParameterKeyRequestDict];
     if( requestDict != nil ) {
-        [paramDict setObject:requestDict forKey:SampleManagerNotifyParameterKeyRequestDict];
+        paramDict[SampleManagerNotifyParameterKeyRequestDict] = requestDict;
     }
     
     // and received result parameters,
     NSMutableDictionary * resultDict = [result parameterForKey:SampleExecutorParameterKeyResultDict];
     if( resultDict != nil ) {
-        [paramDict setObject:resultDict forKey:SampleManagerNotifyParameterKeyResultDict];
+        paramDict[SampleManagerNotifyParameterKeyResultDict] = resultDict;
     }
     
     // and failed flag.
     if( [[result parameterForKey:SampleExecutorParameterKeyFailedFlag] boolValue] == YES ) {
-        [paramDict setObject:@"Y" forKey:SampleManagerNotifyParameterKeyFailedFlag];
+        paramDict[SampleManagerNotifyParameterKeyFailedFlag] = @"Y";
     }
     
     // if completion block specified, then call it.
@@ -236,7 +236,7 @@
     }
     
     // if 'paramDict' is empty, then we don't have to notification, so return 'nil'.
-    if( [paramDict count] == 0 ) {
+    if( paramDict.count == 0 ) {
         return nil;
     }
 	

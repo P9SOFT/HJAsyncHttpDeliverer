@@ -29,7 +29,7 @@
 #define		HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond     @"HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond"
 
 
-typedef enum _HJAsyncHttpDelivererStatus_
+typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererStatus)
 {
 	HJAsyncHttpDelivererStatusStart,
 	HJAsyncHttpDelivererstatusConnected,
@@ -38,91 +38,59 @@ typedef enum _HJAsyncHttpDelivererStatus_
 	HJAsyncHttpDelivererStatusCanceled,
 	HJAsyncHttpDelivererStatusFailed
     
-} HJAsyncHttpDelivererStatus;
+};
 
-typedef enum _HJAsyncHttpDelivererPostContentType_
+typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererPostContentType)
 {
 	HJAsyncHttpDelivererPostContentTypeMultipart,
 	HJAsyncHttpDelivererPostContentTypeUrlEncoded,
 	HJAsyncHttpDelivererPostContentTypeApplicationJson
-} HJAsyncHttpDelivererPostContentType;
+};
 
 
 @interface HJAsyncHttpDeliverer : HYAsyncTask <NSStreamDelegate>
-{
-	NSMutableURLRequest		*_request;
-	NSURLConnection			*_connection;
-	NSURLResponse			*_response;
-	NSMutableData			*_sendData;
-	NSMutableData			*_receivedData;
-	BOOL					_notifyStatus;
-	NSString				*_urlString;
-	NSMutableDictionary		*_queryStringFieldDict;
-	NSMutableDictionary		*_headerFieldDict;
-	NSMutableDictionary		*_formDataFieldDict;
-	NSMutableDictionary		*_formDataFileNameDict;
-	NSMutableDictionary		*_formDataContentTypeDict;
-	NSString				*_uploadFileFormDataField;
-	NSString				*_uploadFileName;
-	NSString				*_uploadFileContentType;
-	NSString				*_uploadFilePath;
-	NSString				*_downloadFilePath;
-	NSFileHandle			*_fileHandle;
-	NSString				*_multipartBoundaryString;
-	NSArray					*_trustedHosts;
-	NSNumber				*_lastUploadContentLengthNumber;
-	NSInteger				_transferBufferSize;
-	BOOL					_playWithLimitPool;
-	uint8_t					*_buffer;
-	NSUInteger				_bufferSize;
-	NSUInteger				_filledSize;
-	NSUInteger				_lookingIndex;
-	NSOutputStream			*_producerStream;
-	NSInputStream			*_fileStream;
-	NSMutableDictionary		*_sharedDict;
-}
 
-- (BOOL) setGetWithUrlString: (NSString *)urlString;
-- (BOOL) setGetWithUrlString: (NSString *)urlString queryStringDict: (NSDictionary *)queryStringDict;
-- (BOOL) setGetWithUrlString: (NSString *)urlString toFilePath: (NSString *)filePath;
-- (BOOL) setGetWithUrlString: (NSString *)urlString queryStringDict: (NSDictionary *)queryStringDict toFilePath: (NSString *)filePath;
-- (BOOL) setPostWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
-- (BOOL) setPostUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data;
-- (BOOL) setPostUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath;
-- (BOOL) setPutWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
-- (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data;
-- (BOOL) setPutUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType filePath: (NSString *)filePath;
-- (BOOL) setDeleteWithUrlString: (NSString *)urlString formDataDict: (NSDictionary *)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString;
+- (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString queryStringDict: (NSDictionary * _Nullable)queryStringDict;
+- (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString toFilePath: (NSString * _Nullable)filePath;
+- (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString queryStringDict: (NSDictionary * _Nullable)queryStringDict toFilePath: (NSString * _Nullable)filePath;
+- (BOOL) setPostWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setPostUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType data: (NSData * _Nullable)data;
+- (BOOL) setPostUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType filePath: (NSString * _Nullable)filePath;
+- (BOOL) setPutWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setPutUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType data: (NSData * _Nullable)data;
+- (BOOL) setPutUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType filePath: (NSString * _Nullable)filePath;
+- (BOOL) setDeleteWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
 
-- (id) valueForQueryStringField: (NSString *)fieldName;
-- (BOOL) setValue: (id)value forQueryStringField: (NSString *)fieldName;
-- (BOOL) setValuesFromQueryStringDict: (NSDictionary *)dict;
-- (void) removeValueForQueryStringField: (NSString *)fieldName;
+- (id _Nullable) valueForQueryStringField: (NSString * _Nullable)fieldName;
+- (BOOL) setValue: (id _Nullable)value forQueryStringField: (NSString * _Nullable)fieldName;
+- (BOOL) setValuesFromQueryStringDict: (NSDictionary * _Nullable)dict;
+- (void) removeValueForQueryStringField: (NSString * _Nullable)fieldName;
 - (void) clearAllQueryStringFields;
 
-- (NSString *) valueForHeaderField: (NSString *)fieldName;
-- (BOOL) setValue: (NSString *)value forHeaderField: (NSString *)fieldName;
-- (BOOL) setValuesFromHeaderFieldDict: (NSDictionary *)dict;
-- (void) removeValueForHeaderField: (NSString *)fieldName;
+- (NSString * _Nullable) valueForHeaderField: (NSString * _Nullable)fieldName;
+- (BOOL) setValue: (NSString * _Nullable)value forHeaderField: (NSString * _Nullable)fieldName;
+- (BOOL) setValuesFromHeaderFieldDict: (NSDictionary * _Nullable)dict;
+- (void) removeValueForHeaderField: (NSString * _Nullable)fieldName;
 - (void) clearAllHeaderFields;
 
-- (id) valueForFormDataField: (NSString *)fieldName;
-- (BOOL) setValue: (id)value forFormDataField: (NSString *)fieldName;
-- (BOOL) setData: (NSData *)data forFormDataField: (NSString *)fieldName fileName: (NSString *)fileName contentType: (NSString *)contentType;
-- (BOOL) setFileForStreammingUpload: (NSString *)filePath forFormDataField: (NSString *)fieldName fileName: (NSString *)fileName contentType: (NSString *)contentType;
-- (BOOL) setValuesFromFormDataDict: (NSDictionary *)dict;
-- (void) removeValueForFormDataField: (NSString *)fieldName;
+- (id _Nullable) valueForFormDataField: (NSString * _Nullable)fieldName;
+- (BOOL) setValue: (id _Nullable)value forFormDataField: (NSString * _Nullable)fieldName;
+- (BOOL) setData: (NSData * _Nullable)data forFormDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName contentType: (NSString * _Nullable)contentType;
+- (BOOL) setFileForStreammingUpload: (NSString * _Nullable)filePath forFormDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName contentType: (NSString * _Nullable)contentType;
+- (BOOL) setValuesFromFormDataDict: (NSDictionary * _Nullable)dict;
+- (void) removeValueForFormDataField: (NSString * _Nullable)fieldName;
 - (void) clearAllFormDataFields;
 
-- (BOOL) setBodyData: (NSData *)bodyData;
+- (BOOL) setBodyData: (NSData * _Nullable)bodyData;
 
 @property (nonatomic, assign) BOOL notifyStatus;
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;
 @property (nonatomic, assign) NSTimeInterval timeoutInterval;
-@property (nonatomic, strong) NSString *urlString;
-@property (nonatomic, strong) NSString *method;
-@property (nonatomic, strong) NSString *multipartBoundaryString;
-@property (nonatomic, strong) NSArray *trustedHosts;
+@property (nonatomic, strong) NSString * _Nullable urlString;
+@property (nonatomic, strong) NSString * _Nullable method;
+@property (nonatomic, strong) NSString * _Nullable multipartBoundaryString;
+@property (nonatomic, strong) NSArray * _Nullable trustedHosts;
 @property (nonatomic, assign) NSInteger transferBufferSize;
 
 @end
