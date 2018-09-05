@@ -160,14 +160,14 @@
         NSArray *searchPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
         NSString *documentPath = searchPaths[0];
         NSString *filePath = [NSString stringWithFormat:@"%@/sample.png", documentPath];
-        [[SampleManager defaultManager] requestServerApi:serverApiUrl parameterDict:paramDict downloadFileTo:filePath completion:^(NSMutableDictionary *resultDict) {
+        [[SampleManager defaultManager] requestServerApi:@"https://upload.wikimedia.org/wikipedia/commons/d/dd/Big_%26_Small_Pumkins.JPG" parameterDict:paramDict downloadFileTo:filePath completion:^(NSMutableDictionary *resultDict) {
             self.transferButton.enabled = YES;
         }];
     // request upload file to SampleManager.
     } else if( self.uploadFileButton.selected == YES ) {
         self.transferButton.enabled = NO;
         NSString *filePath = [NSString stringWithFormat:@"%@/sample.png", [NSBundle mainBundle].resourcePath];
-        [[SampleManager defaultManager] requestServerApi:serverApiUrl parameterDict:paramDict formDataFieldName:@"uploadfile" fileName:@"sample.png" contentType:@"image/png" uploadFileFrom:filePath completion:^(NSMutableDictionary *resultDict) {
+        [[SampleManager defaultManager] requestServerApi:@"http://localhost/upload.php" parameterDict:paramDict formDataFieldName:@"uploadfile" fileName:@"sample.png" contentType:@"image/png" uploadFileFrom:filePath completion:^(NSMutableDictionary *resultDict) {
             self.transferButton.enabled = YES;
         }];
     }
