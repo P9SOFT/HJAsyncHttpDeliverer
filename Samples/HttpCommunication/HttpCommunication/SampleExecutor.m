@@ -108,8 +108,6 @@
         //
         // [asyncHttpDeliverer setTrustedHosts:@[@"www.p9soft.com"]];
         
-        [self setTask:asyncHttpDeliverer forKey:[@(asyncHttpDeliverer.issuedId) stringValue]];
-        
         // read parameter values from query object.
         SampleExecutorOperation operaiton = (SampleExecutorOperation)[[anQuery parameterForKey:SampleExecutorParameterKeyOperation] integerValue];
         NSDictionary *requestDict = [anQuery parameterForKey:SampleExecutorParameterKeyRequestDict];
@@ -137,7 +135,9 @@
         }
         
 		// bind it
-		[self bindAsyncTask:asyncHttpDeliverer];
+        if( [self bindAsyncTask:asyncHttpDeliverer] == YES ) {
+            [self setTask:asyncHttpDeliverer forKey:[@(asyncHttpDeliverer.issuedId) stringValue]];
+        }
 		
 	}
 	
