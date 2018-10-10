@@ -1099,6 +1099,9 @@
 	}
 }
 
+#pragma mark -
+#pragma mark redirect methods by manually from NSURLSessionDataDelegate, NSURLSessionTaskDelegate
+
 - (void) receiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler {
     
     NSURLSessionAuthChallengeDisposition authChallenge = NSURLSessionAuthChallengeUseCredential;
