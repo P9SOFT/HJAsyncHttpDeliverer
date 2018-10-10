@@ -14,14 +14,15 @@
 #define		kTransferBufferSize			8192
 
 
-@interface HJAsyncHttpDeliverer()
+@interface HJAsyncHttpDeliverer() <NSStreamDelegate>
 {
     NSMutableURLRequest		*_request;
-    NSURLConnection			*_connection;
+    NSURLSession            *_session;
+    NSURLSessionDataTask    *_dataTask;
+    NSURLSessionUploadTask  *_uploadTask;
     NSURLResponse			*_response;
     NSMutableData			*_sendData;
     NSMutableData			*_receivedData;
-    BOOL					_notifyStatus;
     NSString				*_urlString;
     NSMutableDictionary		*_queryStringFieldDict;
     NSMutableDictionary		*_headerFieldDict;
@@ -34,8 +35,6 @@
     NSString				*_uploadFilePath;
     NSString				*_downloadFilePath;
     NSFileHandle			*_fileHandle;
-    NSString				*_multipartBoundaryString;
-    NSArray					*_trustedHosts;
     NSNumber				*_lastUploadContentLengthNumber;
     NSInteger				_transferBufferSize;
     BOOL					_playWithLimitPool;
@@ -66,18 +65,18 @@
 
 @implementation HJAsyncHttpDeliverer
 
-@synthesize notifyStatus = _notifyStatus;
 @dynamic cachePolicy;
 @dynamic timeoutInterval;
 @dynamic urlString;
 @dynamic method;
-@synthesize multipartBoundaryString = _multipartBoundaryString;
-@synthesize trustedHosts = _trustedHosts;
 @dynamic transferBufferSize;
 
 - (instancetype) initWithCloseQuery: (id)anQuery
 {
 	if( (self = [super initWithCloseQuery: anQuery]) != nil ) {
+        if( [anQuery isKindOfClass: [HYQuery class]] == NO ) {
+            return nil;
+        }
 		if( (_request = [[NSMutableURLRequest alloc] init]) == nil ) {
 			return nil;
 		}
@@ -104,6 +103,7 @@
 		}
 		_multipartBoundaryString = kMultipartBoundaryString;
 		_transferBufferSize = kTransferBufferSize;
+        _session = [(HYQuery *)anQuery parameterForKey:HJAsyncHttpDelivererParameterKeySession];
 	}
 	
 	return self;
@@ -163,11 +163,14 @@
 		[_fileHandle closeFile];
 		_fileHandle = nil;
 	}
-	
-	if( _connection != nil ) {
-		[_connection cancel];
-		_connection = nil;
-	}
+    if( _dataTask != nil ) {
+        [_dataTask cancel];
+        _dataTask = nil;
+    }
+    if( _uploadTask != nil ) {
+        [_uploadTask cancel];
+        _uploadTask = nil;
+    }
 	
 	if( _producerStream != nil ) {
 		_producerStream.delegate = nil;
@@ -363,11 +366,13 @@
 		}
 	)
 	
-	if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
-		return NO;
-	}
-    [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
-    [_connection start];
+    if( _uploadFilePath.length > 0 ) {
+        _uploadTask = [_session uploadTaskWithStreamedRequest:_request];
+    } else {
+        _uploadTask = [_session uploadTaskWithRequest:_request fromData:_sendData];
+    }
+    _uploadTask.taskDescription = [@(self.issuedId) stringValue];
+    [_uploadTask resume];
 	
 	return YES;
 }
@@ -471,7 +476,7 @@
 	if( urlString.length <= 0 ) {
 		return NO;
 	}
-		
+    
 	switch( contentType ) {
 		case HJAsyncHttpDelivererPostContentTypeMultipart :
 			[self setValue: [NSString stringWithFormat :@"multipart/form-data; boundary=%@", _multipartBoundaryString] forHeaderField: @"Content-Type"];
@@ -818,6 +823,7 @@
 	NSString		*baseDirectory;
 	BOOL			isDirecotry;
 	BOOL			fileCreated;
+    BOOL            taskReady;
 	NSString		*value;
 	NSString		*urlStringWithQueries;
 	NSURL			*url;
@@ -853,8 +859,8 @@
 	if( ([_request.HTTPMethod isEqualToString: @"GET"] == YES) ) {
 		
 		_fileHandle = nil;
-		_connection = nil;
 		fileCreated = NO;
+        taskReady = YES;
 		
 		if( _downloadFilePath.length > 0 ) {
 			if( (baseDirectory = _downloadFilePath.stringByDeletingLastPathComponent) != nil ) {
@@ -868,26 +874,24 @@
 				}
 				fileCreated = [[NSFileManager defaultManager] createFileAtPath: _downloadFilePath contents: nil attributes: nil];
 			}
-			_fileHandle = [NSFileHandle fileHandleForWritingAtPath: _downloadFilePath];
-			if( _fileHandle != nil ) {
-				_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO];
-			}
-		} else {
-			_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO];
+            if( (_fileHandle = [NSFileHandle fileHandleForWritingAtPath: _downloadFilePath]) == nil ) {
+                taskReady = NO;
+            }
 		}
-		if( _connection == nil ) {
+        if( taskReady == NO ) {
 			[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
 			if( fileCreated == YES ) {
 				[[NSFileManager defaultManager] removeItemAtPath: _downloadFilePath error: nil];
 			}
 			return NO;
-		}
-        [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
-        [_connection start];
+        }
+        _dataTask = [_session dataTaskWithRequest:_request];
+        _dataTask.taskDescription = [@(self.issuedId) stringValue];
+        [_dataTask resume];
 		
 		HYTRACE_BLOCK
 		(
-			if( _connection != nil ) {
+            if( _dataTask != nil ) {
 				HYTRACE( @"- HJAsyncHttpDeliverer [%d] request start", self.issuedId );
 				HYTRACE( @"- url    [%@]", [_request URL] );
 				HYTRACE( @"- method [%@]", [_request HTTPMethod] );
@@ -921,13 +925,10 @@
 		});
 		
 	} else {
-		
-		if( (_connection = [[NSURLConnection alloc] initWithRequest: _request delegate: self startImmediately: NO]) == nil ) {
-			[self.closeQuery setParameter: @"Y" forKey: HJAsyncHttpDelivererParameterKeyFailed];
-			return NO;
-		}
-        [_connection scheduleInRunLoop: [NSRunLoop currentRunLoop] forMode: NSRunLoopCommonModes];
-        [_connection start];
+        
+        _dataTask = [_session dataTaskWithRequest:_request];
+        _dataTask.taskDescription = [@(self.issuedId) stringValue];
+        [_dataTask resume];
 		
 	}
 	
@@ -1098,10 +1099,18 @@
 	}
 }
 
-#pragma mark -
-#pragma mark NSURLConnection methods
+- (void) receiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler {
+    
+    NSURLSessionAuthChallengeDisposition authChallenge = NSURLSessionAuthChallengeUseCredential;
+    if( _trustedHosts.count > 0 ) {
+        if( [_trustedHosts containsObject:challenge.protectionSpace.host] == NO ) {
+            authChallenge = NSURLSessionAuthChallengeCancelAuthenticationChallenge;
+        }
+    }
+    completionHandler(authChallenge, (authChallenge == NSURLSessionAuthChallengeUseCredential) ? [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust] : nil);
+}
 
-- (void) connection: (NSURLConnection *)connection didReceiveResponse: (NSURLResponse *)response
+- (void) receiveResponse: (NSURLResponse *)response
 {
 	_response = response;
 	
@@ -1114,23 +1123,7 @@
 	}
 }
 
-- (BOOL) connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace: (NSURLProtectionSpace *)protectionSpace
-{
-	return [protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust];
-}
-
-- (void) connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge: (NSURLAuthenticationChallenge *)challenge
-{
-	if( [challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust] == YES ) {
-		if( [_trustedHosts containsObject:challenge.protectionSpace.host] == YES ) {
-			[challenge.sender useCredential: [NSURLCredential credentialForTrust: challenge.protectionSpace.serverTrust] forAuthenticationChallenge: challenge];
-		}
-	}
-	
-	[challenge.sender continueWithoutCredentialForAuthenticationChallenge:challenge];
-}
-
-- (void) connection:( NSURLConnection *)connection didReceiveData: (NSData *)data
+- (void) receiveData: (NSData *)data
 {
 	NSUInteger		transferLength;
 	
@@ -1138,7 +1131,7 @@
         @try {
             [_fileHandle writeData: data];
         } @catch (NSException *exception) {
-            [self connection:connection didFailWithError:nil];
+            [self failWithError:nil];
             return;
         }
         transferLength = (NSUInteger)_fileHandle.offsetInFile;
@@ -1149,7 +1142,7 @@
 		[_receivedData appendData: data];
 		transferLength = _receivedData.length;
 	}
-	
+    
 	if( _notifyStatus == YES ) {
 		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
 											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
@@ -1160,7 +1153,7 @@
 	}
 }
 
-- (void) connection: (NSURLConnection *)connection didSendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite
+- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite
 {	
 	if( _notifyStatus == YES ) {
 		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
@@ -1174,7 +1167,7 @@
 	}
 }
 
-- (void) connection: (NSURLConnection *)connection didFailWithError: (NSError *)error
+- (void) failWithError: (NSError *)error
 {
 	[self.closeQuery setParameter: @(self.passedMilisecondFromBind) forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
 	if( _response != nil ) {
@@ -1203,13 +1196,17 @@
 	}
 }
 
-- (void) connectionDidFinishLoading: (NSURLConnection *)connection
+- (void) finishLoading
 {
 	[self.closeQuery setParameter: @(self.passedMilisecondFromBind) forKey: HJAsyncHttpDelivererParameterKeyWorkingTimeByMilisecond];
 	if( _response != nil ) {
 		[self.closeQuery setParameter: _response forKey: HJAsyncHttpDelivererParameterKeyResponse];
 	}
 	
+    if( _fileHandle != nil ) {
+        [_fileHandle closeFile];
+        _fileHandle = nil;
+    }
     if( _receivedData != nil ) {
         [self.closeQuery setParameter: _receivedData forKey: HJAsyncHttpDelivererParameterKeyBody];
     }

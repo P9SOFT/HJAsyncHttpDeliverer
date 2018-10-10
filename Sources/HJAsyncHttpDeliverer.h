@@ -16,6 +16,7 @@
 
 #define		HJAsyncHttpDelivererParameterKeyFailed                      @"HJAsyncHttpDelivererParameterKeyFailed"
 #define		HJAsyncHttpDelivererParameterKeyCanceled					@"HJAsyncHttpDelivererParameterKeyCanceled"
+#define     HJAsyncHttpDelivererParameterKeySession                     @"HJAsyncHttpDelivererParameterKeySession"
 #define		HJAsyncHttpDelivererParameterKeyUrlString					@"HJAsyncHttpDelivererParameterKeyUrlString"
 #define		HJAsyncHttpDelivererParameterKeyResponse					@"HJAsyncHttpDelivererParameterKeyResponse"
 #define		HJAsyncHttpDelivererParameterKeyBody						@"HJAsyncHttpDelivererParameterKeyBody"
@@ -48,7 +49,7 @@ typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererPostContentType)
 };
 
 
-@interface HJAsyncHttpDeliverer : HYAsyncTask <NSStreamDelegate>
+@interface HJAsyncHttpDeliverer : HYAsyncTask
 
 - (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString;
 - (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString queryStringDict: (NSDictionary * _Nullable)queryStringDict;
@@ -83,6 +84,13 @@ typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererPostContentType)
 - (void) clearAllFormDataFields;
 
 - (BOOL) setBodyData: (NSData * _Nullable)bodyData;
+
+- (void) receiveChallenge:(NSURLAuthenticationChallenge * _Nullable)challenge completionHandler:(void (^_Nullable)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
+- (void) receiveResponse: (NSURLResponse * _Nullable)response;
+- (void) receiveData: (NSData * _Nullable)data;
+- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite;
+- (void) failWithError: (NSError * _Nullable)error;
+- (void) finishLoading;
 
 @property (nonatomic, assign) BOOL notifyStatus;
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;
