@@ -56,12 +56,15 @@ typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererPostContentType)
 - (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString toFilePath: (NSString * _Nullable)filePath;
 - (BOOL) setGetWithUrlString: (NSString * _Nullable)urlString queryStringDict: (NSDictionary * _Nullable)queryStringDict toFilePath: (NSString * _Nullable)filePath;
 - (BOOL) setPostWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setPostWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue;
 - (BOOL) setPostUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType data: (NSData * _Nullable)data;
 - (BOOL) setPostUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType filePath: (NSString * _Nullable)filePath;
 - (BOOL) setPutWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setPutWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue;
 - (BOOL) setPutUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType data: (NSData * _Nullable)data;
 - (BOOL) setPutUploadWithUrlString: (NSString * _Nullable)urlString formDataField: (NSString * _Nullable)fieldName fileName: (NSString * _Nullable)fileName fileContentType: (NSString * _Nullable)fileContentType filePath: (NSString * _Nullable)filePath;
 - (BOOL) setDeleteWithUrlString: (NSString * _Nullable)urlString formDataDict: (NSDictionary * _Nullable)dict contentType: (HJAsyncHttpDelivererPostContentType)contentType;
+- (BOOL) setDeleteWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue;
 
 - (id _Nullable) valueForQueryStringField: (NSString * _Nullable)fieldName;
 - (BOOL) setValue: (id _Nullable)value forQueryStringField: (NSString * _Nullable)fieldName;

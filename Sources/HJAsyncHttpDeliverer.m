@@ -29,6 +29,7 @@
     NSMutableDictionary		*_formDataFieldDict;
     NSMutableDictionary		*_formDataFileNameDict;
     NSMutableDictionary		*_formDataContentTypeDict;
+    NSData                  *_customBody;
     NSString				*_uploadFileFormDataField;
     NSString				*_uploadFileName;
     NSString				*_uploadFileContentType;
@@ -243,10 +244,15 @@
 	
 	boundaryData = [[NSString stringWithFormat: @"--%@\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding];
 	
-    if( [_headerFieldDict[@"Content-Type"] isEqualToString: @"application/x-www-form-urlencoded"] == YES ) {
+    if( [_headerFieldDict[@"Content-Type"] rangeOfString: @"application/x-www-form-urlencoded"].location != NSNotFound ) {
         if( _formDataFieldDict.count > 0 ) {
             if( (value = [self stringForUrlEncodedFromDict: _formDataFieldDict]) != nil ) {
                 [_sendData appendData: [value dataUsingEncoding: NSUTF8StringEncoding]];
+            }
+        } else {
+            if( _customBody.length > 0 ) {
+                [_sendData appendData:_customBody];
+                _customBody = nil;
             }
         }
     } else if( [_headerFieldDict[@"Content-Type"] rangeOfString: @"multipart/form-data"].location != NSNotFound ) {
@@ -280,8 +286,13 @@
                 }
             }
             [_sendData appendData: [[NSString stringWithFormat: @"--%@--\r\n", _multipartBoundaryString] dataUsingEncoding: NSUTF8StringEncoding]];
+        } else {
+            if( _customBody.length > 0 ) {
+                [_sendData appendData:_customBody];
+                _customBody = nil;
+            }
         }
-    } else if( [_headerFieldDict[@"Content-Type"] isEqualToString: @"application/json"] == YES ) {
+    } else if( [_headerFieldDict[@"Content-Type"] rangeOfString: @"application/json"].location != NSNotFound ) {
         if( _formDataFieldDict.count > 0 ) {
             if( [NSJSONSerialization isValidJSONObject: _formDataFieldDict] == YES ) {
                 if( (data = [NSJSONSerialization dataWithJSONObject: _formDataFieldDict options: NSJSONWritingPrettyPrinted error: &error]) != nil ) {
@@ -289,9 +300,17 @@
                 }
             }
         } else {
-            if( (data = [@"{}" dataUsingEncoding: NSUTF8StringEncoding]) != nil ) {
+            if( _customBody.length > 0 ) {
+                [_sendData appendData:_customBody];
+                _customBody = nil;
+            } else if( (data = [@"{}" dataUsingEncoding: NSUTF8StringEncoding]) != nil ) {
                 [_sendData appendData: data];
             }
+        }
+    } else {
+        if( _customBody.length > 0 ) {
+            [_sendData appendData:_customBody];
+            _customBody = nil;
         }
     }
 	
@@ -486,7 +505,6 @@
 			break;
 		case HJAsyncHttpDelivererPostContentTypeApplicationJson :
 			[self setValue: @"application/json" forHeaderField: @"Content-Type"];
-			[self setValue: @"application/json" forHeaderField: @"Accept"];
 			break;
 		default :
 			return NO;
@@ -498,6 +516,22 @@
 	[self setValuesFromFormDataDict: dict];
 	
 	return YES;
+}
+
+- (BOOL) setPostWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue
+{
+    if( (urlString.length <= 0) || (contentTypeValue.length <= 0) ) {
+        return NO;
+    }
+    
+    [self setValue:contentTypeValue forHeaderField:@"Content-Type"];
+    
+    self.urlString = urlString;
+    self.method = @"POST";
+    
+    _customBody = body;
+    
+    return YES;
 }
 
 - (BOOL) setPostUploadWithUrlString: (NSString *)urlString formDataField: (NSString *)fieldName fileName: (NSString *)fileName fileContentType: (NSString *)fileContentType data: (NSData *)data
@@ -547,7 +581,6 @@
             break;
         case HJAsyncHttpDelivererPostContentTypeApplicationJson :
             [self setValue: @"application/json" forHeaderField: @"Content-Type"];
-            [self setValue: @"application/json" forHeaderField: @"Accept"];
             break;
         default :
             return NO;
@@ -557,6 +590,22 @@
     [self setMethod: @"PUT"];
     
     [self setValuesFromFormDataDict: dict];
+    
+    return YES;
+}
+
+- (BOOL) setPutWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue
+{
+    if( (urlString.length <= 0) || (contentTypeValue.length <= 0) ) {
+        return NO;
+    }
+    
+    [self setValue:contentTypeValue forHeaderField:@"Content-Type"];
+    
+    self.urlString = urlString;
+    self.method = @"PUT";
+    
+    _customBody = body;
     
     return YES;
 }
@@ -608,7 +657,6 @@
             break;
         case HJAsyncHttpDelivererPostContentTypeApplicationJson :
             [self setValue: @"application/json" forHeaderField: @"Content-Type"];
-            [self setValue: @"application/json" forHeaderField: @"Accept"];
             break;
         default :
             return NO;
@@ -618,6 +666,22 @@
     [self setMethod: @"DELETE"];
     
     [self setValuesFromFormDataDict: dict];
+    
+    return YES;
+}
+
+- (BOOL) setDeleteWithUrlString: (NSString * _Nullable)urlString body:(NSData * _Nullable)body contentTypeValue: (NSString * _Nullable)contentTypeValue
+{
+    if( (urlString.length <= 0) || (contentTypeValue.length <= 0) ) {
+        return NO;
+    }
+    
+    [self setValue:contentTypeValue forHeaderField:@"Content-Type"];
+    
+    self.urlString = urlString;
+    self.method = @"DELETE";
+    
+    _customBody = body;
     
     return YES;
 }
