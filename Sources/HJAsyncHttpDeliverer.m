@@ -1220,7 +1220,7 @@
 	}
 }
 
-- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (unsigned long long)totalBytesWritten totalBytesExpectedToWrite: (unsigned long long)totalBytesExpectedToWrite
+- (void) sendBodyData: (unsigned long long)bytesWritten totalBytesWritten: (unsigned long long)totalBytesWritten totalBytesExpectedToWrite: (unsigned long long)totalBytesExpectedToWrite
 {	
 	if( _notifyStatus == YES ) {
 		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
