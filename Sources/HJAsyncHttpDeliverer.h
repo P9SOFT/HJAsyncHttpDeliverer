@@ -91,7 +91,7 @@ typedef NS_ENUM(NSInteger, HJAsyncHttpDelivererPostContentType)
 - (void) receiveChallenge:(NSURLAuthenticationChallenge * _Nullable)challenge completionHandler:(void (^_Nullable)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
 - (void) receiveResponse: (NSURLResponse * _Nullable)response;
 - (void) receiveData: (NSData * _Nullable)data;
-- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite;
+- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (unsigned long long)totalBytesWritten totalBytesExpectedToWrite: (unsigned long long)totalBytesExpectedToWrite;
 - (void) failWithError: (NSError * _Nullable)error;
 - (void) finishLoading;
 
