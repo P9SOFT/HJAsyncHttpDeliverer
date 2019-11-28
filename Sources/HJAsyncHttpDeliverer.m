@@ -1192,7 +1192,7 @@
 
 - (void) receiveData: (NSData *)data
 {
-	NSUInteger		transferLength;
+	unsigned long long  transferLength;
 	
 	if( _fileHandle != nil ) {
         @try {
@@ -1201,7 +1201,7 @@
             [self failWithError:nil];
             return;
         }
-        transferLength = (NSUInteger)_fileHandle.offsetInFile;
+        transferLength = _fileHandle.offsetInFile;
 	} else {
 		if( _receivedData == nil ) {
 			_receivedData = [[NSMutableData alloc] init];
@@ -1211,16 +1211,16 @@
 	}
     
 	if( _notifyStatus == YES ) {
-		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
+		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @(self.issuedId),
 											 HJAsyncHttpDelivererParameterKeyUrlString: _urlString,
 											 HJAsyncHttpDelivererParameterKeyStatus: @((NSInteger)HJAsyncHttpDelivererStatusTransfering),
-											 HJAsyncHttpDelivererParameterKeyAmountTransferedLength: [NSNumber numberWithLongLong: transferLength],
-											 HJAsyncHttpDelivererParameterKeyCurrentTransferedLength: [NSNumber numberWithLongLong: data.length]}
+											 HJAsyncHttpDelivererParameterKeyAmountTransferedLength: @(transferLength),
+											 HJAsyncHttpDelivererParameterKeyCurrentTransferedLength: @(data.length)}
 		 ];
 	}
 }
 
-- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (NSInteger)totalBytesWritten totalBytesExpectedToWrite: (NSInteger)totalBytesExpectedToWrite
+- (void) sendBodyData: (NSInteger)bytesWritten totalBytesWritten: (unsigned long long)totalBytesWritten totalBytesExpectedToWrite: (unsigned long long)totalBytesExpectedToWrite
 {	
 	if( _notifyStatus == YES ) {
 		[self pushNotifyStatusToMainThread: @{HJAsyncHttpDelivererParameterKeyIssuedId: @((NSUInteger)self.issuedId),
